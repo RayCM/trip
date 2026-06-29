@@ -4,6 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>日本中部 15 日自由行</title>
+<!-- App 圖示的楓葉路徑取自 Font Awesome（canadian-maple-leaf），授權 CC BY 4.0：https://fontawesome.com -->
+<meta name="theme-color" content="#b8472e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="日本行程">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
 
@@ -967,6 +976,10 @@ function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpens
   renderAll();
  }
 })();
+</script>
+<script>
+/* PWA：註冊 service worker（檔名 sw.js 需與本檔同層）。沒上傳 sw.js 也不會壞，只是 Android 無法全螢幕。 */
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 </body>
 </html>
