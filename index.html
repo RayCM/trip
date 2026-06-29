@@ -367,17 +367,19 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
 <!-- Firebase（共用同步用）。架到網站後才會生效；Claude 預覽中會被擋，會自動退回本機儲存。 -->
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 
 <script>
 /* ===== 設定（架站前請填 Firebase 設定，未填則自動退回本機儲存）=====
    1) 到 https://console.firebase.google.com 建專案 → 建「Realtime Database」
-   2) 專案設定 → 你的應用程式 → 複製 firebaseConfig 貼到下面
-   3) TRIP_ID 是全團共用代號，請保密；知道網址的人就能編輯這趟資料 */
+   2) Authentication → 開始使用 → 登入方式 → 啟用「匿名」(Anonymous)
+   3) 專案設定 → 你的應用程式 → 複製 firebaseConfig 貼到下面
+   4) TRIP_ID 是全團共用代號；規則設為「需登入才能讀寫」，可擋直接打資料庫的掃描 */
 const FIREBASE_CONFIG={
-  apiKey:"PASTE_API_KEY",
-  authDomain:"PASTE.firebaseapp.com",
-  databaseURL:"https://PASTE-default-rtdb.firebaseio.com",
-  projectId:"PASTE_PROJECT_ID"
+  apiKey:"AIzaSyBn31fdiicqypyJoiB_3wnfLsS6osmm4Kc",
+  authDomain:"trip-850a4.firebaseapp.com",
+  databaseURL:"https://trip-850a4-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"trip-850a4"
 };
 const TRIP_ID="chubu-2026-7k3p9q";
 
@@ -949,9 +951,16 @@ function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpens
  renderAll(); // 先畫出介面（資料稍後載入）
 
  if(dbRef){
-  // 全團即時同步：任何人變更，所有人畫面即時更新
-  dbRef.on('value',snap=>{applySnapshot(snap.val());renderAll();},
-    err=>{console.error('Firebase read failed',err);});
+  // 先匿名登入，通過後才讀寫資料庫（規則需 auth != null）
+  let attached=false;
+  firebase.auth().onAuthStateChanged(function(user){
+   if(user&&!attached){
+    attached=true;
+    dbRef.on('value',snap=>{applySnapshot(snap.val());renderAll();},
+      err=>{console.error('Firebase read failed',err);});
+   }
+  });
+  firebase.auth().signInAnonymously().catch(function(e){console.error('匿名登入失敗（請確認已在 Firebase 啟用 Anonymous）',e);});
  }else{
   // 本機模式（未設定 Firebase 或預覽環境）
   applySnapshot(lsGet('trip:shared',null));
