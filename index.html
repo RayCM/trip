@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>日本中部 15 日自由行</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+
+:root{
+  --paper:#f4ede0;--paper-2:#efe6d6;--card:#fffdf8;
+  --ink:#241f19;--ink-soft:#5e564c;--ink-faint:#928a7d;--line:#e1d6c2;
+  --momiji:#b8472e;--persimmon:#c2693a;--slate:#5b7c91;--cedar:#5d7e57;--hida:#b58a36;--home:#8a8278;--gold:#c2913f;
+  --shadow:0 1px 2px rgba(60,45,25,.06),0 8px 24px rgba(60,45,25,.06);
+  --serif:'Shippori Mincho','Noto Serif TC','Noto Serif JP','Songti TC','Songti SC',serif;
+  --sans:'Noto Sans TC','Noto Sans JP',-apple-system,BlinkMacSystemFont,'PingFang TC','Hiragino Sans','Microsoft JhengHei',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);color:var(--ink);background:var(--paper);
+  background-image:radial-gradient(circle at 12% 18%, rgba(184,71,46,.04), transparent 40%),radial-gradient(circle at 88% 82%, rgba(91,124,145,.05), transparent 42%);
+  line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:40px;
+}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px}
+
+header{padding:20px 0 14px;text-align:center}
+.langbar{display:flex;justify-content:center;margin-bottom:18px}
+.langseg{display:inline-flex;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+.langseg button{appearance:none;border:none;background:none;cursor:pointer;font-family:var(--sans);font-size:12.5px;font-weight:700;color:var(--ink-faint);padding:6px 15px;transition:.15s;letter-spacing:.04em}
+.langseg button.on{background:var(--ink);color:var(--paper)}
+.langseg button:focus-visible{outline:2px solid var(--slate);outline-offset:-2px}
+
+.eyebrow{font-size:12px;letter-spacing:.32em;color:var(--momiji);font-weight:700;text-indent:.32em;margin-bottom:10px}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(26px,6.6vw,38px);letter-spacing:.05em;line-height:1.15;color:var(--ink)}
+h1 .leaf{display:inline-block;vertical-align:-3px;width:.85em;height:.85em;margin:0 .14em}
+.daterange{font-family:var(--serif);font-size:15px;color:var(--ink-soft);letter-spacing:.18em;margin-top:8px}
+.route{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:7px;margin-top:16px;font-size:12.5px;color:var(--ink-soft);letter-spacing:.05em}
+.route .seg{display:inline-flex;align-items:center;gap:6px}
+.route .dot{width:8px;height:8px;border-radius:50%}
+.route .arr{color:var(--ink-faint);font-size:11px}
+
+.tabbar{position:sticky;top:0;z-index:30;background:rgba(244,237,224,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);margin-top:18px}
+.tabs{display:flex;max-width:680px;margin:0 auto;padding:0 16px}
+.tab{flex:1;appearance:none;border:none;background:none;cursor:pointer;font-family:var(--sans);font-size:15px;font-weight:700;color:var(--ink-faint);padding:15px 4px 13px;letter-spacing:.08em;position:relative;transition:color .2s}
+.tab[aria-selected="true"]{color:var(--ink)}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);width:32px;height:3px;border-radius:3px;background:var(--momiji)}
+.tab:focus-visible{outline:2px solid var(--slate);outline-offset:-4px;border-radius:6px}
+
+main{padding-top:22px}
+.panel{display:none;animation:fade .4s ease both}
+.panel.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.region-key{display:flex;flex-wrap:wrap;gap:11px 15px;justify-content:center;font-size:11.5px;color:var(--ink-soft);margin-bottom:24px}
+.region-key span{display:inline-flex;align-items:center;gap:5px}
+.region-key i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+.timeline{position:relative;padding-left:54px}
+.timeline::before{content:"";position:absolute;left:21px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.day{position:relative;margin-bottom:18px}
+.node{position:absolute;left:-54px;top:2px;width:44px;text-align:center}
+.node .num{font-family:var(--serif);font-size:11px;font-weight:700;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;box-shadow:var(--shadow);position:relative;z-index:2}
+.node .leaf-mark{position:absolute;top:-7px;right:1px;width:15px;height:15px;z-index:3;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px 14px;box-shadow:var(--shadow);border-left:4px solid var(--line)}
+.card .top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:9px}
+.card .wd{font-size:11px;font-weight:700;color:#fff;border-radius:20px;padding:2px 9px;letter-spacing:.05em;white-space:nowrap}
+.card .date{font-family:var(--serif);font-size:13px;color:var(--ink-faint);letter-spacing:.06em}
+.card h3{font-family:var(--serif);font-size:18px;font-weight:700;letter-spacing:.03em;color:var(--ink);flex:1 1 100%;line-height:1.3}
+.row{display:flex;gap:9px;font-size:13.5px;color:var(--ink-soft);margin-top:7px;line-height:1.55}
+.row .lbl{flex-shrink:0;color:var(--ink-faint);font-size:11px;font-weight:700;min-width:46px;letter-spacing:.03em;margin-top:2px}
+.note{color:var(--momiji);font-size:12.5px}
+.note .lbl{color:var(--momiji);opacity:.85}
+.booklink{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:600;color:var(--slate);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:5px 11px;background:#fbf8f1;transition:.18s}
+.booklink:hover{border-color:var(--slate);background:#f3f7f9}
+.booklink:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+.stay-link{color:var(--slate);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line);transition:.15s}
+.stay-link:hover{text-decoration-color:var(--slate)}
+.stay-link:focus-visible{outline:2px solid var(--slate);outline-offset:2px;border-radius:3px}
+
+.exp-total{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow);margin-bottom:18px;text-align:center}
+.exp-total .cap{font-size:11px;letter-spacing:.22em;color:var(--ink-faint);font-weight:700;text-transform:uppercase}
+.exp-total .twd{font-family:var(--serif);font-size:38px;font-weight:700;color:var(--ink);margin:4px 0;letter-spacing:.02em}
+.exp-total .sub{font-size:13px;color:var(--ink-soft);display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+.exp-total .sub b{color:var(--ink);font-weight:600}
+.rate-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;font-size:11.5px;color:var(--ink-faint)}
+.rate-row input{width:62px;font-family:var(--sans);font-size:12.5px;text-align:center;border:1px solid var(--line);border-radius:6px;padding:3px 4px;background:#fbf8f1;color:var(--ink)}
+.rate-row input:focus{outline:2px solid var(--slate);outline-offset:0}
+
+.breakdown{display:flex;height:9px;border-radius:6px;overflow:hidden;margin-bottom:5px;background:var(--line)}
+.breakdown div{height:100%}
+.breakdown-legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:11.5px;color:var(--ink-soft);margin-bottom:20px;justify-content:center}
+.breakdown-legend span{display:inline-flex;align-items:center;gap:5px}
+.breakdown-legend i{width:9px;height:9px;border-radius:2px}
+
+.seed-card{background:#fbf6ec;border:1px dashed var(--hida);border-radius:14px;padding:14px 16px;margin-bottom:18px}
+.seed-ttl{font-family:var(--serif);font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.seed-sub{font-size:12.5px;color:var(--ink-soft);line-height:1.6}
+.seed-sub b{color:var(--hida)}
+.seed-btns{display:flex;gap:8px;margin-top:12px}
+.seed-btn{appearance:none;border:none;cursor:pointer;font-family:var(--sans);font-size:13.5px;font-weight:700;padding:10px;border-radius:9px;transition:.18s;letter-spacing:.03em}
+.seed-btn.add{flex:1;background:var(--hida);color:#fff}
+.seed-btn.add:hover{filter:brightness(1.06)}
+.seed-btn.add:disabled{opacity:.5;cursor:default}
+.seed-btn.rm{flex:0 0 84px;background:#f0eee9;color:var(--ink-faint)}
+.seed-btn.rm:hover{color:var(--momiji)}
+.seed-btn:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+
+.exp-form{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;box-shadow:var(--shadow);margin-bottom:18px}
+.exp-form .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field.full{grid-column:1 / -1}
+.field label{font-size:11px;font-weight:700;color:var(--ink-faint);letter-spacing:.05em}
+.field input,.field select{font-family:var(--sans);font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:#fbf8f1}
+.field input:focus,.field select:focus{outline:2px solid var(--slate);outline-offset:0;background:#fff}
+.cur-toggle{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.cur-toggle button{flex:1;appearance:none;border:none;background:#fbf8f1;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink-faint);padding:9px 0;transition:.15s}
+.cur-toggle button.on{background:var(--momiji);color:#fff}
+.addbtn{width:100%;margin-top:12px;appearance:none;border:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--sans);font-weight:700;font-size:15px;letter-spacing:.08em;padding:12px;border-radius:10px;transition:.18s}
+.addbtn:hover{background:var(--momiji)}
+.addbtn:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+
+.exp-list{display:flex;flex-direction:column;gap:8px}
+.exp-item{display:flex;align-items:center;gap:11px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:11px 13px;box-shadow:var(--shadow)}
+.exp-item .cat-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.exp-item .meta{flex:1;min-width:0}
+.exp-item .meta .ttl{font-size:14px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.exp-item .meta .sub{font-size:11.5px;color:var(--ink-faint)}
+.exp-item .amt{font-family:var(--serif);font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap}
+.exp-item .del{appearance:none;border:none;background:none;cursor:pointer;color:var(--ink-faint);font-size:18px;line-height:1;padding:2px 4px;border-radius:6px;transition:.15s}
+.exp-item .del:hover{color:var(--momiji)}
+.exp-payer{font-family:var(--sans);font-size:11px;color:var(--slate);border:1px solid var(--line);border-radius:6px;padding:2px 4px;background:#fbf8f1;max-width:96px}
+.exp-payer:focus{outline:2px solid var(--slate);outline-offset:0}
+.exp-item .meta .sub{font-size:11.5px;color:var(--ink-faint);display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px}
+
+.settle-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow);margin-top:22px}
+.settle-ttl{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--ink);letter-spacing:.03em;margin-bottom:14px}
+.members-label{font-size:11px;font-weight:700;color:var(--ink-faint);letter-spacing:.06em;margin-bottom:8px}
+.members-box{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.member-chip{display:inline-flex;align-items:center;gap:6px;background:#f3f0e8;border:1px solid var(--line);border-radius:20px;padding:5px 6px 5px 12px;font-size:13px;font-weight:600;color:var(--ink)}
+.member-chip button{appearance:none;border:none;background:none;cursor:pointer;color:var(--ink-faint);font-size:15px;line-height:1;padding:0 2px;border-radius:50%}
+.member-chip button:hover{color:var(--momiji)}
+.member-add{display:flex;gap:8px;margin-bottom:16px}
+.member-add input{flex:1;font-family:var(--sans);font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:#fbf8f1}
+.member-add input:focus{outline:2px solid var(--slate);outline-offset:0;background:#fff}
+.member-add button{flex:0 0 46px;appearance:none;border:none;cursor:pointer;background:var(--cedar);color:#fff;font-size:18px;font-weight:700;border-radius:9px;transition:.15s}
+.member-add button:hover{filter:brightness(1.06)}
+.member-add button:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+
+.settle-hint{font-size:12.5px;color:var(--ink-faint);line-height:1.6;background:#faf6ec;border-radius:10px;padding:12px 13px}
+.settle-meta{font-size:12px;color:var(--ink-faint);margin-bottom:12px}
+.settle-meta b{color:var(--ink)}
+.balrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.balrow:last-child{border-bottom:none}
+.balrow .nm{flex:1;font-size:14px;font-weight:600;color:var(--ink)}
+.balrow .paid{font-size:11.5px;color:var(--ink-faint);white-space:nowrap}
+.balrow .net{font-family:var(--serif);font-size:14px;font-weight:700;white-space:nowrap;min-width:96px;text-align:right}
+.net.pos{color:var(--cedar)}
+.net.neg{color:var(--momiji)}
+.net.zero{color:var(--ink-faint)}
+.plan-ttl{font-size:11px;font-weight:700;color:var(--ink-faint);letter-spacing:.06em;margin:16px 0 9px}
+.txrow{display:flex;align-items:center;gap:8px;background:#f3f6f1;border-radius:10px;padding:11px 13px;margin-bottom:8px;font-size:14px}
+.txrow .who{font-weight:700;color:var(--ink)}
+.txrow .arr{color:var(--cedar);font-weight:700}
+.txrow .amt{margin-left:auto;font-family:var(--serif);font-weight:700;color:var(--ink)}
+.all-even{text-align:center;font-size:13.5px;color:var(--cedar);font-weight:600;padding:14px}
+
+.todo-head{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);margin-bottom:18px;display:flex;align-items:center;gap:14px}
+.todo-head .ring{position:relative;width:54px;height:54px;flex-shrink:0}
+.todo-head .ring svg{transform:rotate(-90deg)}
+.todo-head .ring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:14px;font-weight:700;color:var(--ink)}
+.todo-head .txt h3{font-family:var(--serif);font-size:16px;font-weight:700;letter-spacing:.03em}
+.todo-head .txt p{font-size:12.5px;color:var(--ink-soft);margin-top:2px}
+
+.todo-item{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px;box-shadow:var(--shadow);margin-bottom:9px;transition:.2s}
+.todo-item.done{opacity:.55}
+.todo-item.done .ti-ttl{text-decoration:line-through;color:var(--ink-faint)}
+.check{flex-shrink:0;width:24px;height:24px;border-radius:7px;border:2px solid var(--line);background:#fbf8f1;cursor:pointer;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:.15s;appearance:none}
+.check.on{background:var(--cedar);border-color:var(--cedar)}
+.check.on::after{content:"✓";color:#fff;font-size:14px;font-weight:700}
+.check:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+.ti-body{flex:1;min-width:0}
+.ti-ttl{font-size:14.5px;font-weight:600;color:var(--ink);line-height:1.35}
+.ti-meta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:5px;font-size:11.5px;color:var(--ink-faint)}
+.ti-meta .due{font-weight:700}
+.countdown{display:inline-block;font-size:10.5px;font-weight:700;padding:1px 8px;border-radius:20px;letter-spacing:.04em}
+.cd-soon{background:#fceae2;color:var(--momiji)}
+.cd-ok{background:#eef2ec;color:var(--cedar)}
+.cd-over{background:#f0eee9;color:var(--ink-faint)}
+.ti-link{display:inline-flex;align-items:center;gap:4px;margin-top:9px;font-size:11.5px;font-weight:600;color:var(--slate);text-decoration:none;border:1px solid var(--line);border-radius:7px;padding:4px 10px;background:#fbf8f1}
+.ti-link:hover{border-color:var(--slate)}
+
+.empty{text-align:center;color:var(--ink-faint);font-size:13.5px;padding:30px 10px}
+footer{text-align:center;font-size:11px;color:var(--ink-faint);margin-top:34px;letter-spacing:.05em;line-height:1.9}
+footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;margin:0 3px}
+
+.trip-bar{display:flex;justify-content:flex-end;margin-bottom:14px}
+.edit-toggle{appearance:none;border:1px solid var(--line);background:var(--card);cursor:pointer;font-family:var(--sans);font-size:12.5px;font-weight:700;color:var(--ink-soft);padding:6px 14px;border-radius:20px;transition:.15s;box-shadow:var(--shadow)}
+.edit-toggle.on{background:var(--momiji);color:#fff;border-color:var(--momiji)}
+.edit-toggle:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+.day-tools{display:flex;gap:6px;margin-top:12px;padding-top:11px;border-top:1px dashed var(--line)}
+.dtool{appearance:none;border:1px solid var(--line);background:#fbf8f1;cursor:pointer;font-size:13px;padding:5px 11px;border-radius:8px;transition:.15s;color:var(--ink-soft)}
+.dtool:hover:not(:disabled){border-color:var(--slate);background:#fff}
+.dtool:disabled{opacity:.35;cursor:default}
+.dtool:focus-visible{outline:2px solid var(--slate);outline-offset:1px}
+.add-day{width:100%;margin-top:4px;appearance:none;border:1.5px dashed var(--cedar);background:#f3f6f1;cursor:pointer;font-family:var(--sans);font-size:14.5px;font-weight:700;color:var(--cedar);padding:13px;border-radius:12px;transition:.15s}
+.add-day:hover{background:#ebf1e8}
+.add-day:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+
+.modal{position:fixed;inset:0;z-index:100;display:none;align-items:flex-start;justify-content:center;background:rgba(36,31,25,.5);backdrop-filter:blur(3px);overflow-y:auto;padding:24px 14px}
+.modal.on{display:flex}
+.modal-card{background:var(--paper);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:480px;padding:22px 20px;margin:auto}
+.modal-card h3{font-family:var(--serif);font-size:19px;font-weight:700;color:var(--ink);margin-bottom:16px;letter-spacing:.03em}
+.m-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.m-grid .field.full{grid-column:1 / -1}
+.m-grid label{font-size:11px;font-weight:700;color:var(--ink-faint);letter-spacing:.04em}
+.m-grid input,.m-grid select,.m-grid textarea{font-family:var(--sans);font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card);width:100%;resize:vertical}
+.m-grid input:focus,.m-grid select:focus,.m-grid textarea:focus{outline:2px solid var(--slate);outline-offset:0}
+.m-check label{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
+.m-check input{width:18px;height:18px;accent-color:var(--momiji)}
+.m-actions{display:flex;gap:10px;margin-top:18px}
+.m-btn{flex:1;appearance:none;border:none;cursor:pointer;font-family:var(--sans);font-size:15px;font-weight:700;padding:12px;border-radius:10px;letter-spacing:.06em;transition:.15s}
+.m-btn.save{background:var(--ink);color:var(--paper)}
+.m-btn.save:hover{background:var(--momiji)}
+.m-btn.cancel{background:#ece4d4;color:var(--ink-soft)}
+.m-btn.del{width:100%;margin-top:10px;background:none;color:var(--momiji);border:1px solid #e6c9c0;font-size:13px;padding:9px}
+.m-btn.del:hover{background:#fceae2}
+.m-btn:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+
+@media (max-width:420px){
+  .exp-form .grid{grid-template-columns:1fr}
+  .timeline{padding-left:48px}.node{left:-48px;width:40px}.timeline::before{left:19px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="momiji" viewBox="0 0 24 24"><path fill="currentColor" d="M12 1.6l1.5 3.1 2.6-1.1-.7 2.9 3.1.2-1.9 2.3 2.7 1.5-2.9.9 1.3 3-3-1 .1 3.2-2.1-2-1.2 3-1.2-3-2.1 2 .1-3.2-3 1 1.3-3-2.9-.9 2.7-1.5L2.8 8.9 5.9 8.7 5.2 5.8l2.6 1.1z"/></symbol>
+</defs></svg>
+
+<header>
+  <div class="wrap">
+    <div class="langbar"><div class="langseg" role="group" aria-label="language">
+      <button id="lang-zh" onclick="setLang('zh')">中</button>
+      <button id="lang-en" onclick="setLang('en')">EN</button>
+      <button id="lang-ja" onclick="setLang('ja')">日</button>
+    </div></div>
+    <div class="eyebrow" id="eyebrow"></div>
+    <h1><span id="title-a"></span><svg class="leaf" style="color:var(--momiji)"><use href="#momiji"/></svg><span id="title-b"></span></h1>
+    <div class="daterange">10 / 21　—　11 / 04</div>
+    <div class="route" id="route"></div>
+  </div>
+</header>
+
+<div class="tabbar"><div class="tabs" role="tablist">
+  <button class="tab" id="tab-trip" role="tab" aria-selected="true" aria-controls="p-trip" onclick="showTab('trip')"></button>
+  <button class="tab" id="tab-exp" role="tab" aria-selected="false" aria-controls="p-exp" onclick="showTab('exp')"></button>
+  <button class="tab" id="tab-todo" role="tab" aria-selected="false" aria-controls="p-todo" onclick="showTab('todo')"></button>
+</div></div>
+
+<main class="wrap">
+
+  <section class="panel on" id="p-trip" role="tabpanel" aria-labelledby="tab-trip">
+    <div class="trip-bar"><button class="edit-toggle" id="edit-toggle" onclick="toggleEdit()">✏️</button></div>
+    <div class="region-key" id="region-key"></div>
+    <div class="timeline" id="timeline"></div>
+    <button class="add-day" id="add-day" onclick="openDayForm()" style="display:none"></button>
+  </section>
+
+  <section class="panel" id="p-exp" role="tabpanel" aria-labelledby="tab-exp">
+    <div class="exp-total">
+      <div class="cap" id="exp-cap"></div>
+      <div class="twd" id="exp-twd">NT$ 0</div>
+      <div class="sub">
+        <span><span id="lbl-jpy"></span> <b id="sum-jpy">¥0</b></span>
+        <span><span id="lbl-twd"></span> <b id="sum-twd">NT$0</b></span>
+      </div>
+      <div class="rate-row"><span id="rate-pre"></span> <input type="number" id="rate" value="0.21" step="0.001" min="0" inputmode="decimal"> <span id="rate-post"></span></div>
+    </div>
+
+    <div class="breakdown" id="breakdown"></div>
+    <div class="breakdown-legend" id="breakdown-legend"></div>
+
+    <div class="seed-card">
+      <div class="seed-ttl" id="seed-ttl"></div>
+      <div class="seed-sub" id="seed-sub"></div>
+      <div class="seed-btns">
+        <button type="button" class="seed-btn add" id="seed-add" onclick="importTransport()"></button>
+        <button type="button" class="seed-btn rm" id="seed-rm" onclick="removeTransport()" style="display:none"></button>
+      </div>
+    </div>
+
+    <div class="exp-form">
+      <div class="grid">
+        <div class="field"><label for="e-amount" id="f-amount-l"></label><input type="number" id="e-amount" placeholder="0" inputmode="decimal" min="0"></div>
+        <div class="field"><label id="f-cur-l"></label>
+          <div class="cur-toggle">
+            <button type="button" id="cur-jpy" class="on" onclick="setCur('JPY')"></button>
+            <button type="button" id="cur-twd" onclick="setCur('TWD')"></button>
+          </div>
+        </div>
+        <div class="field"><label for="e-cat" id="f-cat-l"></label><select id="e-cat"></select></div>
+        <div class="field"><label for="e-date" id="f-date-l"></label><input type="date" id="e-date"></div>
+        <div class="field full"><label for="e-paidby" id="f-paidby-l"></label><select id="e-paidby"></select></div>
+        <div class="field full"><label for="e-note" id="f-note-l"></label><input type="text" id="e-note"></div>
+      </div>
+      <button class="addbtn" type="button" id="addbtn" onclick="addExpense()"></button>
+    </div>
+
+    <div class="exp-list" id="exp-list"></div>
+
+    <div class="settle-card">
+      <div class="settle-ttl" id="settle-ttl"></div>
+      <div class="members-label" id="members-label"></div>
+      <div class="members-box" id="members-box"></div>
+      <div class="member-add">
+        <input type="text" id="member-input" maxlength="20">
+        <button type="button" id="member-add-btn" onclick="addMember()">＋</button>
+      </div>
+      <div id="settle-body"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p-todo" role="tabpanel" aria-labelledby="tab-todo">
+    <div class="todo-head">
+      <div class="ring">
+        <svg width="54" height="54">
+          <circle cx="27" cy="27" r="23" fill="none" stroke="var(--line)" stroke-width="6"/>
+          <circle id="ring-fg" cx="27" cy="27" r="23" fill="none" stroke="var(--cedar)" stroke-width="6" stroke-linecap="round" stroke-dasharray="144.5" stroke-dashoffset="144.5"/>
+        </svg>
+        <div class="pct" id="todo-pct">0/9</div>
+      </div>
+      <div class="txt"><h3 id="todo-h3"></h3><p id="todo-p"></p></div>
+    </div>
+    <div id="todo-list"></div>
+  </section>
+
+</main>
+
+<div class="modal" id="modal">
+  <div class="modal-card">
+    <h3 id="m-title"></h3>
+    <div class="m-grid">
+      <div class="field"><label id="ml-date" for="m-date"></label><input type="text" id="m-date" placeholder="10/26"></div>
+      <div class="field"><label id="ml-region" for="m-region"></label><select id="m-region"></select></div>
+      <div class="field full"><label id="ml-dest" for="m-dest"></label><input type="text" id="m-dest"></div>
+      <div class="field full"><label id="ml-trans" for="m-trans"></label><textarea id="m-trans" rows="3"></textarea></div>
+      <div class="field full"><label id="ml-stay" for="m-stay"></label><input type="text" id="m-stay"></div>
+      <div class="field full"><label id="ml-stayurl" for="m-stayurl"></label><input type="text" id="m-stayurl" placeholder="https://"></div>
+      <div class="field full"><label id="ml-note" for="m-note"></label><textarea id="m-note" rows="2"></textarea></div>
+      <div class="field"><label id="ml-url" for="m-url"></label><input type="text" id="m-url" placeholder="https://"></div>
+      <div class="field"><label id="ml-ulabel" for="m-ulabel"></label><input type="text" id="m-ulabel"></div>
+      <div class="field full m-check"><label><input type="checkbox" id="m-leaf"> <span id="ml-leaf"></span></label></div>
+    </div>
+    <div class="m-actions">
+      <button class="m-btn cancel" id="m-cancel" onclick="closeDayForm()"></button>
+      <button class="m-btn save" id="m-save" onclick="saveDayForm()"></button>
+    </div>
+    <button class="m-btn del" id="m-del" onclick="delDayFromForm()" style="display:none"></button>
+  </div>
+</div>
+
+<footer><svg class="leaf" style="color:var(--momiji)"><use href="#momiji"/></svg><span id="footer-text"></span></footer>
+
+<!-- Firebase（共用同步用）。架到網站後才會生效；Claude 預覽中會被擋，會自動退回本機儲存。 -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+
+<script>
+/* ===== 設定（架站前請填 Firebase 設定，未填則自動退回本機儲存）=====
+   1) 到 https://console.firebase.google.com 建專案 → 建「Realtime Database」
+   2) 專案設定 → 你的應用程式 → 複製 firebaseConfig 貼到下面
+   3) TRIP_ID 是全團共用代號，請保密；知道網址的人就能編輯這趟資料 */
+const FIREBASE_CONFIG={
+  apiKey:"PASTE_API_KEY",
+  authDomain:"PASTE.firebaseapp.com",
+  databaseURL:"https://PASTE-default-rtdb.firebaseio.com",
+  projectId:"PASTE_PROJECT_ID"
+};
+const TRIP_ID="chubu-2026-7k3p9q";
+
+/* ===== storage layer =====
+   共用資料（記帳/待辦/匯率）：有設定 Firebase → 全團即時同步；否則退回本機 localStorage。
+   語言偏好：一律存本機（屬於個人 UI 設定，不同步）。 */
+const mem={};
+const HAS_LS=(()=>{try{const k='__test__';localStorage.setItem(k,'1');localStorage.removeItem(k);return true;}catch(e){return false;}})();
+const FB_READY=(typeof firebase!=='undefined')&&FIREBASE_CONFIG.databaseURL&&FIREBASE_CONFIG.databaseURL.indexOf('PASTE')===-1;
+let dbRef=null;
+if(FB_READY){try{firebase.initializeApp(FIREBASE_CONFIG);dbRef=firebase.database().ref('trips/'+TRIP_ID);}catch(e){console.error('Firebase init failed',e);dbRef=null;}}
+
+function lsGet(k,fb){try{if(HAS_LS){const v=localStorage.getItem(k);return v!==null?JSON.parse(v):fb;}return (k in mem)?mem[k]:fb;}catch(e){return fb;}}
+function lsSet(k,v){try{if(HAS_LS){localStorage.setItem(k,JSON.stringify(v));return;}mem[k]=v;}catch(e){}}
+
+async function pushShared(){
+  const payload={expenses,todos:todoState,settings:{rate},itinerary};
+  if(dbRef){try{await dbRef.set(payload);}catch(e){console.error('sync failed',e);}return;}
+  lsSet('trip:shared',payload);
+}
+/* 只寫被更動的區塊，避免不同人同時編輯不同分頁互相覆蓋 */
+async function pushField(field,value){
+  if(dbRef){try{await dbRef.child(field).set(value);}catch(e){console.error('sync failed',e);}return;}
+  const cur=lsGet('trip:shared',{});cur[field]=value;lsSet('trip:shared',cur);
+}
+function applySnapshot(d){
+  d=d||{};
+  expenses=Array.isArray(d.expenses)?d.expenses:[];
+  todoState=d.todos||{};
+  rate=(d.settings&&d.settings.rate)||0.21;
+  itinerary=(Array.isArray(d.itinerary)&&d.itinerary.length)?d.itinerary:clone(DEFAULT_DAYS);
+  members=Array.isArray(d.members)?d.members:[];
+  const r=document.getElementById('rate');if(r)r.value=rate;
+}
+function clone(x){return JSON.parse(JSON.stringify(x));}
+
+/* ===== i18n ===== */
+let LANG='zh';
+const t=o=>o==null?'':(typeof o==='string'?o:(o[LANG]||o.zh||''));
+const WD={zh:['一','二','三','四','五','六','日'],en:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],ja:['月','火','水','木','金','土','日']};
+const HTMLLANG={zh:'zh-Hant',en:'en',ja:'ja'};
+
+const UI={
+ eyebrow:{zh:'2026 ‧ 紅葉之旅',en:'2026 ‧ AUTUMN LEAVES',ja:'2026 ‧ 紅葉の旅'},
+ titleA:{zh:'日本中部',en:'Central Japan',ja:'中部日本'},
+ titleB:{zh:'15 日自由行',en:'15 Days',ja:'15日間の旅'},
+ route:{zh:['名古屋','北陸','信州','飛驒','名古屋'],en:['Nagoya','Hokuriku','Shinshu','Hida','Nagoya'],ja:['名古屋','北陸','信州','飛騨','名古屋']},
+ tabTrip:{zh:'行程',en:'Itinerary',ja:'行程'},
+ tabExp:{zh:'記帳',en:'Expenses',ja:'家計簿'},
+ tabTodo:{zh:'訂票',en:'Bookings',ja:'予約'},
+ regionKey:{zh:['名古屋','北陸（富山）','信州（松本）','飛驒（高山）','紅葉重點'],en:['Nagoya','Hokuriku (Toyama)','Shinshu (Matsumoto)','Hida (Takayama)','Foliage highlight'],ja:['名古屋','北陸（富山）','信州（松本）','飛騨（高山）','紅葉スポット']},
+ rowTrans:{zh:'交通',en:'Transit',ja:'交通'},
+ rowStay:{zh:'住宿',en:'Stay',ja:'宿泊'},
+ expCap:{zh:'總支出（估算）',en:'TOTAL (ESTIMATED)',ja:'合計（概算）'},
+ lblJpy:{zh:'日圓',en:'Yen',ja:'円'},
+ lblTwd:{zh:'台幣',en:'TWD',ja:'台湾ドル'},
+ ratePre:{zh:'匯率　¥1 ≈ NT$',en:'Rate　¥1 ≈ NT$',ja:'レート　¥1 ≈ NT$'},
+ ratePost:{zh:'（可改）',en:'(editable)',ja:'（変更可）'},
+ seedTtl:{zh:'🚃 交通預估（每人）',en:'🚃 Transport estimate (per person)',ja:'🚃 交通費の概算（1人）'},
+ seedAdd:{zh:'填入交通預估',en:'Add transport estimate',ja:'交通概算を追加'},
+ seedAdded:{zh:'已填入 ✓',en:'Added ✓',ja:'追加済み ✓'},
+ seedRm:{zh:'移除',en:'Remove',ja:'削除'},
+ fAmount:{zh:'金額',en:'Amount',ja:'金額'},
+ fCur:{zh:'幣別',en:'Currency',ja:'通貨'},
+ fCat:{zh:'分類',en:'Category',ja:'分類'},
+ fDate:{zh:'日期',en:'Date',ja:'日付'},
+ fNote:{zh:'說明（選填）',en:'Note (optional)',ja:'メモ（任意）'},
+ curJpy:{zh:'¥ 日圓',en:'¥ JPY',ja:'¥ 円'},
+ curTwd:{zh:'NT$ 台幣',en:'NT$ TWD',ja:'NT$ 台ドル'},
+ notePh:{zh:'例：富山地鐵飯店、近江町市場午餐…',en:'e.g. Toyama hotel, Omicho lunch…',ja:'例：富山のホテル、近江町ランチ…'},
+ addEntry:{zh:'＋ 新增一筆',en:'+ Add entry',ja:'＋ 1件追加'},
+ emptyExp:{zh:'還沒有任何花費，點上面新增第一筆吧。',en:'No expenses yet — add your first above.',ja:'まだ支出がありません。上から追加してください。'},
+ estTag:{zh:'估算',en:'est.',ja:'概算'},
+ del:{zh:'刪除',en:'Delete',ja:'削除'},
+ todoH3:{zh:'訂票待辦',en:'Booking to-do',ja:'予約のTo Do'},
+ todoP:{zh:'按開賣日排序，記得開賣當天準時搶票',en:'Sorted by on-sale date — be ready when booking opens',ja:'発売日順。発売当日に忘れず予約を'},
+ opens:{zh:'開賣',en:'Opens',ja:'発売'},
+ forPre:{zh:'用於',en:'For',ja:'対象'},
+ bookNow:{zh:'前往訂票 ↗',en:'Book now ↗',ja:'予約する ↗'},
+ footer:{zh:'資料會自動儲存於此裝置 ‧ 建議「加入主畫面」當作行動小幫手',en:'Data is saved automatically on this device ‧ Add to Home Screen to use it on the go',ja:'データはこの端末に自動保存されます ‧「ホーム画面に追加」で旅のお供に'},
+ editOn:{zh:'編輯行程',en:'Edit',ja:'編集'},
+ editOff:{zh:'完成',en:'Done',ja:'完了'},
+ addDay:{zh:'＋ 新增一天',en:'+ Add a day',ja:'＋ 日を追加'},
+ mNewTitle:{zh:'新增行程',en:'New day',ja:'日を追加'},
+ mEditTitle:{zh:'編輯行程',en:'Edit day',ja:'日を編集'},
+ fDate2:{zh:'日期（例 10/26）',en:'Date (e.g. 10/26)',ja:'日付（例 10/26）'},
+ fRegion:{zh:'區域',en:'Region',ja:'エリア'},
+ fDest:{zh:'目的地',en:'Destination',ja:'目的地'},
+ fTrans2:{zh:'交通與行程',en:'Transit & plan',ja:'交通・行程'},
+ fStay2:{zh:'住宿',en:'Lodging',ja:'宿泊'},
+ fStayUrl:{zh:'住宿網址（選填）',en:'Lodging URL (optional)',ja:'宿泊先URL（任意）'},
+ fNote2:{zh:'備註（選填）',en:'Note (optional)',ja:'メモ（任意）'},
+ fUrl:{zh:'訂票網址（選填）',en:'Booking URL (optional)',ja:'予約URL（任意）'},
+ fUlabel:{zh:'按鈕文字（選填）',en:'Button label (optional)',ja:'ボタン名（任意）'},
+ fLeaf:{zh:'標為紅葉重點',en:'Mark as foliage highlight',ja:'紅葉スポットに設定'},
+ save:{zh:'儲存',en:'Save',ja:'保存'},
+ cancel:{zh:'取消',en:'Cancel',ja:'キャンセル'},
+ delDay:{zh:'刪除這天',en:'Delete this day',ja:'この日を削除'},
+ confirmDel:{zh:'確定刪除這天行程？',en:'Delete this day?',ja:'この日を削除しますか？'},
+ bookGeneric:{zh:'訂票連結',en:'Booking link',ja:'予約リンク'},
+ regions:{zh:['名古屋','北陸','信州','飛驒','其他'],en:['Nagoya','Hokuriku','Shinshu','Hida','Other'],ja:['名古屋','北陸','信州','飛騨','その他']},
+ settleTtl:{zh:'結算分帳',en:'Settle up',ja:'割り勘清算'},
+ membersLabel:{zh:'同行成員',en:'Members',ja:'メンバー'},
+ addMemberPh:{zh:'輸入名字後按 ＋',en:'Name, then +',ja:'名前を入力して ＋'},
+ paidBy:{zh:'誰付的',en:'Paid by',ja:'支払者'},
+ paidByNone:{zh:'—　未指定',en:'—　unassigned',ja:'—　未指定'},
+ noMembers:{zh:'先在下方新增同行成員，就能自動分帳。',en:'Add members below to split costs automatically.',ja:'下でメンバーを追加すると自動で割り勘します。'},
+ needPayers:{zh:'在各筆花費指定「誰付的」，這裡就會自動算出怎麼分。',en:'Set “paid by” on expenses and the split shows up here.',ja:'各支出に「支払者」を設定すると精算が表示されます。'},
+ paidWord:{zh:'已付',en:'paid',ja:'支払'},
+ owesWord:{zh:'應付',en:'owes',ja:'支払'},
+ getsWord:{zh:'應收',en:'gets back',ja:'受取'},
+ evenWord:{zh:'結清',en:'settled',ja:'精算済'},
+ planTtl:{zh:'怎麼還',en:'Who pays whom',ja:'精算方法'},
+ allEven:{zh:'目前剛好結清，不用互轉 🎉',en:'All settled — no transfers needed 🎉',ja:'すべて精算済み 🎉'},
+ perEach:{zh:'每人均攤',en:'per person',ja:'1人あたり'}
+};
+function cd(n){
+ const L={zh:{l:'剩 '+n+' 天',t:'明天',td:'今天！',o:'已過 '+(-n)+' 天'},en:{l:n+' days left',t:'Tomorrow',td:'Today!',o:n===-1?'1 day ago':(-n)+' days ago'},ja:{l:'残り '+n+' 日',t:'明日',td:'本日！',o:(-n)+'日経過'}}[LANG];
+ if(n>1)return{cls:'cd-ok',txt:L.l};if(n===1)return{cls:'cd-soon',txt:L.t};if(n===0)return{cls:'cd-soon',txt:L.td};return{cls:'cd-over',txt:L.o};
+}
+function seedSubHtml(twd){
+ const T={zh:`依官網最新票價估算 17 段交通，合計約 <b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。可一鍵填入下方記帳，再依實際金額修改或刪除。`,
+ en:`Estimated from the latest official fares across 17 legs — about <b>¥${fmt(SEED_TOTAL)}</b> (≈ NT$${twd}). Add them to your log in one tap, then edit or delete to match actual costs.`,
+ ja:`公式の最新運賃をもとに17区間を概算、合計 約<b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。ワンタップで下の家計簿に追加、実額に合わせて編集・削除できます。`};
+ return T[LANG];
+}
+
+/* ===== data ===== */
+const REGION={persimmon:'var(--persimmon)',slate:'var(--slate)',cedar:'var(--cedar)',hida:'var(--hida)',home:'var(--home)'};
+const STAY={
+ ngo:{zh:'名古屋花園皇宮飯店',en:'Nagoya Garden Palace Hotel',ja:'名古屋ガーデンパレス',url:'https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA'},
+ toy:{zh:'富山地鐵飯店',en:'Toyama Chitetsu Hotel',ja:'富山地鉄ホテル',url:'https://maps.app.goo.gl/VprwdcATF86Ttm9YA'},
+ mat:{zh:'東橫 INN 松本站東口',en:'Toyoko Inn Matsumoto Sta. East',ja:'東横INN松本駅東口',url:'https://maps.app.goo.gl/RU9hxcBN87C51DPTA'},
+ tak:{zh:'Tabino Hotel Satellite（高山）',en:'Tabino Hotel Satellite (Takayama)',ja:'Tabino Hotel Satellite（高山）',url:'https://maps.app.goo.gl/bDSbYodPWsvwXU3R9'},
+ nm:{zh:'東橫 INN 名古屋丸之內',en:'Toyoko Inn Nagoya Marunouchi',ja:'東横INN名古屋丸の内',url:'https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7'},
+ home:{zh:'溫暖的家 ♡',en:'Home sweet home ♡',ja:'我が家 ♡'}
+};
+const URL_E5489='https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc';
+const L_E5489={zh:'JR e5489 訂票',en:'Book on JR e5489',ja:'JR e5489 で予約'};
+const L_HWB={zh:'高速巴士 訂票',en:'Book highway bus',ja:'高速バス予約'};
+
+const REGION_OPTS=[
+ {key:'persimmon',color:'var(--persimmon)'},
+ {key:'slate',color:'var(--slate)'},
+ {key:'cedar',color:'var(--cedar)'},
+ {key:'hida',color:'var(--hida)'},
+ {key:'home',color:'var(--home)'}
+];
+const DEFAULT_DAYS=[
+ {n:1,date:'10/21',wd:2,r:'persimmon',stay:STAY.ngo,
+  dest:{zh:'名古屋',en:'Nagoya',ja:'名古屋'},
+  trans:{zh:'國泰 CX530（11:30–15:30）抵中部機場。名鐵特急 μ-Sky 往金山站（24 分），轉名城線至榮站。',en:'Cathay CX530 (11:30–15:30) to Chubu Centrair. Meitetsu μ-Sky to Kanayama (24 min), transfer to Meijo Line to Sakae.',ja:'キャセイ CX530（11:30–15:30）で中部国際空港着。名鉄特急 μ-SKY で金山駅（24分）、名城線で栄駅。'}},
+ {n:2,date:'10/22',wd:3,r:'persimmon',stay:STAY.ngo,
+  dest:{zh:'犬山城・熱田神宮',en:'Inuyama Castle & Atsuta Shrine',ja:'犬山城・熱田神宮'},
+  trans:{zh:'上午：名鐵名古屋站搭特急至犬山站（25 分），步行至犬山城下町。下午：熱田神宮。',en:'AM: Meitetsu limited express Nagoya→Inuyama (25 min), walk the castle town. PM: Atsuta Shrine.',ja:'午前：名鉄名古屋から特急で犬山駅（25分）、城下町を散策。午後：熱田神宮。'}},
+ {n:3,date:'10/23',wd:4,r:'slate',stay:STAY.toy,
+  dest:{zh:'富山',en:'Toyama',ja:'富山'},
+  trans:{zh:'上午：JR 特急飛驒 3 號（ひだ3号 08:43–12:32）到富山。下午：富岩運河環水公園。',en:'AM: JR Ltd. Exp. Hida 3 (08:43–12:32) to Toyama. PM: Fugan Canal Kansui Park.',ja:'午前：JR特急ひだ3号（08:43–12:32）で富山へ。午後：富岩運河環水公園。'},
+  note:{zh:'9/22 23:00 開放訂票',en:'Booking opens 9/22 23:00',ja:'9/22 23:00 予約開始'},url:URL_E5489,ulabel:L_E5489},
+ {n:4,date:'10/24',wd:5,r:'slate',stay:STAY.toy,
+  dest:{zh:'雨晴海岸',en:'Amaharashi Coast',ja:'雨晴海岸'},
+  trans:{zh:'行李寄放富山站。搭「愛之風富山鐵道」至高岡，轉 11:16 JR 冰見線到雨晴站。傍晚：富山市區。',en:'Store luggage at Toyama Sta. Ainokaze Toyama Railway to Takaoka, transfer to 11:16 JR Himi Line to Amaharashi. Evening: central Toyama.',ja:'荷物を富山駅に預け、あいの風とやま鉄道で高岡へ、11:16 JR氷見線で雨晴駅。夕方：富山市街。'},
+  note:{zh:'冰見線約一小時一班，務必查好回程；全程可用 IC 卡，高岡轉車不出站。雲層太厚可與 10/25 對調。',en:'Himi Line runs roughly hourly — check return times. IC cards work throughout; no need to exit at Takaoka. If clouds are heavy, swap with 10/25.',ja:'氷見線は約1時間に1本、帰りの時刻を必ず確認。全区間ICカード可、高岡乗換は改札を出ない。雲が厚ければ10/25と入替可。'}},
+ {n:5,date:'10/25',wd:6,r:'slate',stay:STAY.toy,
+  dest:{zh:'金澤・兼六園・近江町市場・東茶屋街',en:'Kanazawa: Kenrokuen, Omicho, Higashi Chaya',ja:'金沢・兼六園・近江町市場・東茶屋街'},
+  trans:{zh:'金澤站 7 號乘車處搭「城下町金澤周遊巴士（右迴）」至兼六園下・金澤城。午餐近江町市場海鮮，下午東茶屋街金箔冰淇淋，傍晚回富山。',en:'From Kanazawa Sta. stop 7, Kenrokuen Shuttle (clockwise) to Kenrokuen-shita. Seafood lunch at Omicho, gold-leaf ice cream in Higashi Chaya, back to Toyama by evening.',ja:'金沢駅7番のりばから城下まち金沢周遊バス（右回り）で兼六園下・金沢城へ。近江町市場で海鮮ランチ、東茶屋街で金箔ソフト、夕方富山へ。'},
+  note:{zh:'回富山後到電鐵富山站售票機，用 QR Code 領取立山黑部車票。',en:'Back in Toyama, collect Tateyama Kurobe tickets from the machine at Dentetsu-Toyama Sta. via QR code.',ja:'富山に戻ったら電鉄富山駅の券売機でQRコードを使い立山黒部のきっぷを受け取る。'}},
+ {n:6,date:'10/26',wd:0,r:'cedar',stay:STAY.mat,leaf:true,
+  dest:{zh:'立山黑部（橫越）',en:'Tateyama Kurobe (Traverse)',ja:'立山黒部（横断）'},
+  trans:{zh:'05:00 富山站寄行李。步行至電鐵富山站搭 05:50 富山地鐵至立山站（07:01 到），經纜車・高原巴士・無軌電車共 6 種交通工具橫越，傍晚抵信濃大町轉巴士往松本。',en:'05:00 forward luggage at Toyama Sta. 05:50 Toyama Chitetsu from Dentetsu-Toyama to Tateyama (arr. 07:01), then cross via 6 modes — cablecar, highland bus, trolleybus & more. Evening: Shinano-Omachi, bus to Matsumoto.',ja:'05:00 富山駅で荷物発送。電鉄富山駅05:50の富山地鉄で立山駅（07:01着）、ケーブルカー・高原バス・トロリーバスなど6種で横断。夕方、信濃大町からバスで松本へ。'},
+  note:{zh:'7/31 09:00 官網搶早鳥票。行李代運：富山寄、信濃大町取（最早 05:00、限當天件）。隨身小背包裝貴重物，洋蔥式穿法＋墨鏡防雪盲。',en:'Grab early-bird tickets on the official site 7/31 09:00. Luggage forwarding: send from Toyama, collect at Shinano-Omachi (from 05:00, same-day only). Valuables in a small backpack; dress in layers; sunglasses against snow glare.',ja:'7/31 09:00 公式サイトで早割確保。手荷物輸送：富山発・信濃大町受取（最早05:00・当日便のみ）。貴重品は小型リュック、重ね着＋雪目防止サングラス。'},
+  url:'https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html',ulabel:{zh:'立山黑部 官網',en:'Tateyama Kurobe official',ja:'立山黒部 公式'}},
+ {n:7,date:'10/27',wd:1,r:'cedar',stay:STAY.mat,
+  dest:{zh:'戶隱神社奧社・善光寺',en:'Togakushi Okusha & Zenkoji',ja:'戸隠神社奥社・善光寺'},
+  trans:{zh:'上午：JR（07:30→08:45）至長野站，7 號巴士站搭 09:20 巴士往戶隱奧社入口。下午：13:34 巴士回長野，1 號站搭公車到善光寺大門，傍晚回松本。',en:'AM: JR (07:30→08:45) to Nagano, stop 7 → 09:20 bus to Togakushi Okusha-iriguchi. PM: 13:34 bus back to Nagano, stop 1 to Zenkoji-Omon. Evening: back to Matsumoto.',ja:'午前：JR（07:30→08:45）で長野駅、7番のりば09:20のバスで戸隠奥社入口へ。午後：13:34のバスで長野へ、1番のりばで善光寺大門。夕方、松本へ。'},
+  note:{zh:'9/26 23:00 訂票。長野善光寺出口 7 號站轉 70 號巴士；去程坐左側（AB）、回程靠右（CD）。',en:'Book 9/26 23:00. From Nagano Zenkoji exit, stop 7, bus #70; sit left (AB) outbound, right (CD) back.',ja:'9/26 23:00 予約。長野駅善光寺口7番から70番バス。往路は左（AB）、復路は右（CD）の席が◎。'},
+  url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',ulabel:L_HWB},
+ {n:8,date:'10/28',wd:2,r:'cedar',stay:STAY.mat,leaf:true,
+  dest:{zh:'上高地',en:'Kamikochi',ja:'上高地'},
+  trans:{zh:'去程：松本巴士總站搭 5:30 直達巴士到上高地。回程：15:15 巴士到新島島站轉電車回松本（已含電車票）。',en:'Out: 5:30 direct bus from Matsumoto Bus Terminal to Kamikochi. Back: 15:15 bus to Shin-Shimashima, train to Matsumoto (train fare included).',ja:'往路：松本バスターミナル5:30の直行バスで上高地へ。復路：15:15のバスで新島々駅、電車で松本へ（電車賃込み）。'},
+  note:{zh:'9/27 23:00 訂票。清晨極冷可能結霜，禦寒裝備同立山黑部，中午回溫再脫。',en:'Book 9/27 23:00. Bitterly cold at dawn, possible frost — same warm gear as Tateyama; shed layers by midday.',ja:'9/27 23:00 予約。早朝は極寒で霜の可能性、防寒は立山黒部と同様。昼に暖かくなったら脱ぐ。'},
+  url:'https://japanbusonline.com/zh-tw/DestinationSearch/1',ulabel:{zh:'巴士 訂票',en:'Book bus',ja:'バス予約'}},
+ {n:9,date:'10/29',wd:3,r:'hida',stay:STAY.tak,
+  dest:{zh:'松本城',en:'Matsumoto Castle',ja:'松本城'},
+  trans:{zh:'上午：步行至國寶松本城。下午：13:05–15:38 巴士前往高山。',en:'AM: walk to Matsumoto Castle (National Treasure). PM: 13:05–15:38 bus to Takayama.',ja:'午前：国宝松本城まで徒歩。午後：13:05–15:38のバスで高山へ。'},
+  note:{zh:'9/28 23:00 訂巴士票。',en:'Book the bus 9/28 23:00.',ja:'9/28 23:00 バス予約。'},
+  url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',ulabel:L_HWB},
+ {n:10,date:'10/30',wd:4,r:'hida',stay:STAY.tak,leaf:true,
+  dest:{zh:'合掌村・高山老街・宮川中橋',en:'Shirakawa-go, Takayama Old Town, Nakabashi',ja:'白川郷・高山古い町並・中橋'},
+  trans:{zh:'07:20 或 07:50 預約制濃飛巴士。先搭接駁車上展望台再回村內散步，13:30 或 14:00 返高山。下午逛高山老街、吃甜點。',en:'Reserved Nohi bus 07:20 or 07:50. Shuttle up to the viewpoint first, then stroll the village; back to Takayama 13:30 or 14:00. Afternoon in the old town with sweets.',ja:'07:20または07:50の予約制濃飛バス。まずシャトルで展望台へ、村内を散策、13:30か14:00で高山へ。午後は古い町並でスイーツ。'},
+  note:{zh:'9/29 23:00 訂票。回濃飛巴士總站領明天巴士票與纜車兌換券。',en:'Book 9/29 23:00. Back at Nohi Bus Center, pick up tomorrow\u2019s bus ticket and the ropeway voucher.',ja:'9/29 23:00 予約。濃飛バスセンターで明日のバス券とロープウェイ引換券を受取。'},
+  url:'https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421',ulabel:{zh:'濃飛巴士 訂票',en:'Book Nohi bus',ja:'濃飛バス予約'}},
+ {n:11,date:'10/31',wd:5,r:'hida',stay:STAY.tak,leaf:true,
+  dest:{zh:'新穗高纜車',en:'Shinhotaka Ropeway',ja:'新穂高ロープウェイ'},
+  trans:{zh:'07:40 濃飛巴士直達新穗高（約 1.5 小時，無法預約需現場排隊）。憑兌換券換纜車票，搭雙層纜車至山頂展望台看北阿爾卑斯連峰。',en:'07:40 Nohi bus direct to Shinhotaka (~1.5 hr, no reservations — queue on site). Exchange voucher for ropeway tickets; ride the double-decker gondola to the summit deck for the Northern Alps.',ja:'07:40 濃飛バスで新穂高へ直行（約1.5時間、予約不可・現地で並ぶ）。引換券でロープウェイ券に交換、二階建てゴンドラで山頂展望台へ、北アルプスの大パノラマ。'},
+  note:{zh:'9/30 訂纜車套票。',en:'Book the ropeway set 9/30.',ja:'9/30 ロープウェイセット券予約。'},
+  url:'https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/',ulabel:{zh:'KLOOK 套票',en:'KLOOK set ticket',ja:'KLOOK セット券'}},
+ {n:12,date:'11/01',wd:6,r:'persimmon',stay:STAY.nm,
+  dest:{zh:'宮川朝市・大須觀音・大須商店街',en:'Miyagawa Market, Osu Kannon, Osu Street',ja:'宮川朝市・大須観音・大須商店街'},
+  trans:{zh:'上午：宮川朝市。下午：JR 特急飛驒 10 號（ひだ10号 12:35–15:04）回名古屋。下午：大須觀音、大須商店街。',en:'AM: Miyagawa Morning Market. JR Ltd. Exp. Hida 10 (12:35–15:04) back to Nagoya. PM: Osu Kannon & Osu Shopping Street.',ja:'午前：宮川朝市。JR特急ひだ10号（12:35–15:04）で名古屋へ。午後：大須観音・大須商店街。'},
+  note:{zh:'9/30 23:00 訂票。',en:'Book 9/30 23:00.',ja:'9/30 23:00 予約。'},url:URL_E5489,ulabel:L_E5489},
+ {n:13,date:'11/02',wd:0,r:'persimmon',stay:STAY.nm,
+  dest:{zh:'馬籠宿・妻籠宿',en:'Magome-juku & Tsumago-juku',ja:'馬籠宿・妻籠宿'},
+  trans:{zh:'08:20 名古屋站 VIP LINER 巴士站集合（一日遊）。',en:'08:20 meet at the VIP Liner stop, Nagoya Station (day tour).',ja:'08:20 名古屋駅 VIPライナー乗り場集合（日帰りツアー）。'},
+  note:{zh:'10/2 訂票。',en:'Book 10/2.',ja:'10/2 予約。'},
+  url:'https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/',ulabel:{zh:'KLOOK 訂票',en:'Book on KLOOK',ja:'KLOOK で予約'}},
+ {n:14,date:'11/03',wd:1,r:'persimmon',stay:STAY.nm,
+  dest:{zh:'名古屋城',en:'Nagoya Castle',ja:'名古屋城'},
+  trans:{zh:'上午：名古屋城。下午：大須觀音、大須商店街。',en:'AM: Nagoya Castle. PM: Osu Kannon & Osu Shopping Street.',ja:'午前：名古屋城。午後：大須観音・大須商店街。'}},
+ {n:15,date:'11/04',wd:2,r:'home',stay:STAY.home,
+  dest:{zh:'返台',en:'Fly Home',ja:'帰国'},
+  trans:{zh:'上午：最後補貨。下午前往中部國際機場，搭國泰 CX531（16:40–19:15）回台灣。',en:'AM: last-minute shopping. PM: head to Chubu Centrair, Cathay CX531 (16:40–19:15) back to Taiwan.',ja:'午前：最後の買い物。午後、中部国際空港へ。キャセイ CX531（16:40–19:15）で台湾へ。'}}
+];
+
+const TODOS=[
+ {id:'tk',due:'2026-07-31',time:'09:00',url:'https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html',
+  title:{zh:'立山黑部 早鳥票（官網）',en:'Tateyama Kurobe early-bird (official)',ja:'立山黒部 早割（公式）'},
+  forDay:{zh:'10/26 立山黑部橫越',en:'10/26 Tateyama traverse',ja:'10/26 立山黒部横断'}},
+ {id:'hida3',due:'2026-09-22',time:'23:00',url:URL_E5489,
+  title:{zh:'JR 特急飛驒 3 號（名古屋→富山）',en:'JR Ltd. Exp. Hida 3 (Nagoya→Toyama)',ja:'JR特急ひだ3号（名古屋→富山）'},
+  forDay:{zh:'10/23 富山',en:'10/23 Toyama',ja:'10/23 富山'}},
+ {id:'togakushi',due:'2026-09-26',time:'23:00',url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',
+  title:{zh:'戶隱・善光寺 高速巴士',en:'Togakushi & Zenkoji highway bus',ja:'戸隠・善光寺 高速バス'},
+  forDay:{zh:'10/27 戶隱奧社・善光寺',en:'10/27 Togakushi & Zenkoji',ja:'10/27 戸隠奥社・善光寺'}},
+ {id:'kamikochi',due:'2026-09-27',time:'23:00',url:'https://japanbusonline.com/zh-tw/DestinationSearch/1',
+  title:{zh:'上高地 直達巴士',en:'Kamikochi direct bus',ja:'上高地 直行バス'},
+  forDay:{zh:'10/28 上高地',en:'10/28 Kamikochi',ja:'10/28 上高地'}},
+ {id:'mtTakayama',due:'2026-09-28',time:'23:00',url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',
+  title:{zh:'松本→高山 高速巴士',en:'Matsumoto→Takayama highway bus',ja:'松本→高山 高速バス'},
+  forDay:{zh:'10/29 松本城',en:'10/29 Matsumoto Castle',ja:'10/29 松本城'}},
+ {id:'shirakawa',due:'2026-09-29',time:'23:00',url:'https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421',
+  title:{zh:'合掌村 濃飛巴士（預約制）',en:'Shirakawa-go Nohi bus (reserved)',ja:'白川郷 濃飛バス（予約制）'},
+  forDay:{zh:'10/30 合掌村',en:'10/30 Shirakawa-go',ja:'10/30 白川郷'}},
+ {id:'ropeway',due:'2026-09-30',time:'',url:'https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/',
+  title:{zh:'新穗高纜車套票',en:'Shinhotaka Ropeway set ticket',ja:'新穂高ロープウェイ セット券'},
+  forDay:{zh:'10/31 新穗高纜車',en:'10/31 Shinhotaka Ropeway',ja:'10/31 新穂高ロープウェイ'}},
+ {id:'hida10',due:'2026-09-30',time:'23:00',url:URL_E5489,
+  title:{zh:'JR 特急飛驒 10 號（高山→名古屋）',en:'JR Ltd. Exp. Hida 10 (Takayama→Nagoya)',ja:'JR特急ひだ10号（高山→名古屋）'},
+  forDay:{zh:'11/01 回名古屋',en:'11/01 back to Nagoya',ja:'11/01 名古屋へ'}},
+ {id:'magome',due:'2026-10-02',time:'',url:'https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/',
+  title:{zh:'馬籠・妻籠 VIP LINER 一日遊',en:'Magome & Tsumago VIP Liner day tour',ja:'馬籠・妻籠 VIPライナー日帰り'},
+  forDay:{zh:'11/02 馬籠妻籠',en:'11/02 Magome & Tsumago',ja:'11/02 馬籠・妻籠'}}
+];
+
+const CATS=[
+ {id:'transport',color:'#5b7c91',name:{zh:'交通',en:'Transport',ja:'交通'}},
+ {id:'lodging',color:'#7a6a9e',name:{zh:'住宿',en:'Lodging',ja:'宿泊'}},
+ {id:'food',color:'#c2693a',name:{zh:'餐飲',en:'Food',ja:'飲食'}},
+ {id:'ticket',color:'#5d7e57',name:{zh:'門票・活動',en:'Tickets & activities',ja:'入場・体験'}},
+ {id:'shopping',color:'#b8472e',name:{zh:'購物',en:'Shopping',ja:'買い物'}},
+ {id:'other',color:'#928a7d',name:{zh:'其他',en:'Other',ja:'その他'}}
+];
+const catById=id=>CATS.find(c=>c.id===id)||CATS[5];
+
+const SEED_TAG='transport';
+const TRANSPORT_EST=[
+ {date:'2026-10-21',jpy:1340,note:{zh:'機場→名古屋 名鐵 μ-Sky',en:'Airport→Nagoya, Meitetsu μ-Sky',ja:'空港→名古屋 名鉄μ-SKY'}},
+ {date:'2026-10-22',jpy:1260,note:{zh:'名古屋↔犬山 名鐵特急（來回）',en:'Nagoya↔Inuyama, Meitetsu Ltd. Exp. (round)',ja:'名古屋↔犬山 名鉄特急（往復）'}},
+ {date:'2026-10-23',jpy:6140,note:{zh:'名古屋→富山 特急飛驒3號 指定席',en:'Nagoya→Toyama, Hida 3 reserved',ja:'名古屋→富山 ひだ3号 指定席'}},
+ {date:'2026-10-24',jpy:1140,note:{zh:'富山↔雨晴海岸 愛之風＋冰見線',en:'Toyama↔Amaharashi, Ainokaze+Himi Line',ja:'富山↔雨晴海岸 あいの風＋氷見線'}},
+ {date:'2026-10-25',jpy:4000,note:{zh:'富山↔金澤（來回）＋城下町周遊巴士',en:'Toyama↔Kanazawa (round) + Kenrokuen shuttle',ja:'富山↔金沢（往復）＋周遊バス'}},
+ {date:'2026-10-26',jpy:1230,note:{zh:'電鐵富山→立山',en:'Dentetsu-Toyama→Tateyama',ja:'電鉄富山→立山'}},
+ {date:'2026-10-26',jpy:13820,note:{zh:'立山→信濃大町 阿爾卑斯橫越',en:'Tateyama→Shinano-Omachi, Alpine traverse',ja:'立山→信濃大町 アルペン横断'}},
+ {date:'2026-10-26',jpy:680,note:{zh:'信濃大町→松本',en:'Shinano-Omachi→Matsumoto',ja:'信濃大町→松本'}},
+ {date:'2026-10-26',jpy:2500,note:{zh:'立山黑部 行李代運（每件）',en:'Tateyama Kurobe luggage forwarding (per bag)',ja:'立山黒部 手荷物輸送（1個）'}},
+ {date:'2026-10-27',jpy:5200,note:{zh:'松本↔長野↔戶隱＋善光寺巴士',en:'Matsumoto↔Nagano↔Togakushi + Zenkoji bus',ja:'松本↔長野↔戸隠＋善光寺バス'}},
+ {date:'2026-10-28',jpy:4550,note:{zh:'松本↔上高地 電鐵＋巴士（來回）',en:'Matsumoto↔Kamikochi, train+bus (round)',ja:'松本↔上高地 電車＋バス（往復）'}},
+ {date:'2026-10-29',jpy:4400,note:{zh:'松本→高山 高速巴士',en:'Matsumoto→Takayama highway bus',ja:'松本→高山 高速バス'}},
+ {date:'2026-10-30',jpy:4600,note:{zh:'高山↔合掌村 濃飛巴士（來回）',en:'Takayama↔Shirakawa-go, Nohi bus (round)',ja:'高山↔白川郷 濃飛バス（往復）'}},
+ {date:'2026-10-31',jpy:7000,note:{zh:'新穗高 巴士＋纜車套票',en:'Shinhotaka bus + ropeway set',ja:'新穂高 バス＋ロープウェイ セット'}},
+ {date:'2026-11-01',jpy:6140,note:{zh:'高山→名古屋 特急飛驒10號 指定席',en:'Takayama→Nagoya, Hida 10 reserved',ja:'高山→名古屋 ひだ10号 指定席'}},
+ {date:'2026-11-02',jpy:8000,note:{zh:'馬籠妻籠 VIP LINER 一日遊（估）',en:'Magome-Tsumago VIP Liner day tour (est.)',ja:'馬籠妻籠 VIPライナー日帰り（概算）'}},
+ {date:'2026-11-04',jpy:1340,note:{zh:'名古屋→機場 名鐵 μ-Sky',en:'Nagoya→Airport, Meitetsu μ-Sky',ja:'名古屋→空港 名鉄μ-SKY'}}
+];
+const SEED_TOTAL=TRANSPORT_EST.reduce((s,x)=>s+x.jpy,0);
+
+/* ===== state ===== */
+let expenses=[],todoState={},rate=0.21,curSel='JPY',itinerary=[],editMode=false,editingIndex=null,members=[];
+
+/* ===== tabs ===== */
+function showTab(tab){['trip','exp','todo'].forEach(k=>{document.getElementById('p-'+k).classList.toggle('on',k===tab);document.getElementById('tab-'+k).setAttribute('aria-selected',k===tab);});}
+
+/* ===== helpers ===== */
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function fmt(n){return Math.round(n).toLocaleString('en-US');}
+
+/* ===== render: itinerary ===== */
+function wdFromDate(str){
+ const m=String(str||'').match(/(\d{1,2})\D+(\d{1,2})/);
+ if(!m)return 0;
+ const d=new Date(2026,parseInt(m[1],10)-1,parseInt(m[2],10));
+ if(isNaN(d))return 0;
+ return (d.getDay()+6)%7; // Mon=0
+}
+function renderTimeline(){
+ document.getElementById('timeline').innerHTML=itinerary.map((d,i)=>{
+  const col=REGION[d.r]||'var(--line)';
+  const wd=(typeof d.wd==='number')?d.wd:wdFromDate(d.date);
+  const leaf=d.leaf?`<svg class="leaf-mark" style="color:var(--momiji)"><use href="#momiji"/></svg>`:'';
+  const noteRow=d.note&&t(d.note)?`<div class="row note"><span class="lbl">✿</span><span>${esc(t(d.note))}</span></div>`:'';
+  const link=d.url?`<a class="booklink" href="${esc(d.url)}" target="_blank" rel="noopener">🎫 ${esc(t(d.ulabel)||t(UI.bookGeneric))}</a>`:'';
+  const tools=editMode?`<div class="day-tools">
+     <button class="dtool" title="↑" onclick="moveDay(${i},-1)" ${i===0?'disabled':''}>↑</button>
+     <button class="dtool" title="↓" onclick="moveDay(${i},1)" ${i===itinerary.length-1?'disabled':''}>↓</button>
+     <button class="dtool" onclick="openDayForm(${i})">✏️</button>
+     <button class="dtool" onclick="deleteDay(${i})">🗑</button>
+   </div>`:'';
+  const stayTxt=esc(t(d.stay));
+  const stayUrl=d.stayUrl||(d.stay&&typeof d.stay==='object'?d.stay.url:'');
+  const stayHtml=stayUrl?`<a class="stay-link" href="${esc(stayUrl)}" target="_blank" rel="noopener">${stayTxt} ↗</a>`:stayTxt;
+  return `<div class="day"><div class="node"><div class="num" style="background:${col}">${String(i+1).padStart(2,'0')}</div>${leaf}</div>
+   <div class="card" style="border-left-color:${col}">
+    <div class="top"><span class="wd" style="background:${col}">${WD[LANG][wd]}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
+    <div class="row"><span class="lbl">${t(UI.rowTrans)}</span><span>${esc(t(d.trans))}</span></div>
+    <div class="row"><span class="lbl">${t(UI.rowStay)}</span><span>${stayHtml}</span></div>
+    ${noteRow}${link}${tools}
+   </div></div>`;
+ }).join('');
+ document.getElementById('edit-toggle').textContent=editMode?t(UI.editOff):'✏️ '+t(UI.editOn);
+ document.getElementById('edit-toggle').classList.toggle('on',editMode);
+ document.getElementById('add-day').style.display=editMode?'block':'none';
+ document.getElementById('add-day').textContent=t(UI.addDay);
+}
+
+/* ===== itinerary editing ===== */
+function toggleEdit(){editMode=!editMode;editingIndex=null;renderTimeline();}
+function moveDay(i,dir){
+ const j=i+dir;if(j<0||j>=itinerary.length)return;
+ const a=itinerary;[a[i],a[j]]=[a[j],a[i]];
+ pushField('itinerary',itinerary);renderTimeline();
+}
+async function deleteDay(i){
+ if(!confirm(t(UI.confirmDel)))return;
+ itinerary.splice(i,1);await pushField('itinerary',itinerary);renderTimeline();
+}
+function openDayForm(i){
+ editingIndex=(typeof i==='number')?i:null;
+ const d=editingIndex!=null?itinerary[editingIndex]:{r:'persimmon'};
+ document.getElementById('m-title').textContent=editingIndex!=null?t(UI.mEditTitle):t(UI.mNewTitle);
+ document.getElementById('m-date').value=d.date||'';
+ const rsel=document.getElementById('m-region');
+ rsel.innerHTML=REGION_OPTS.map((o,k)=>`<option value="${o.key}">${UI.regions[LANG][k]}</option>`).join('');
+ rsel.value=d.r||'persimmon';
+ document.getElementById('m-dest').value=t(d.dest);
+ document.getElementById('m-trans').value=t(d.trans);
+ document.getElementById('m-stay').value=t(d.stay);
+ document.getElementById('m-stayurl').value=d.stayUrl||(d.stay&&typeof d.stay==='object'?d.stay.url:'')||'';
+ document.getElementById('m-note').value=t(d.note);
+ document.getElementById('m-url').value=d.url||'';
+ document.getElementById('m-ulabel').value=t(d.ulabel);
+ document.getElementById('m-leaf').checked=!!d.leaf;
+ document.getElementById('m-del').style.display=editingIndex!=null?'block':'none';
+ // localize labels
+ document.getElementById('ml-date').textContent=t(UI.fDate2);
+ document.getElementById('ml-region').textContent=t(UI.fRegion);
+ document.getElementById('ml-dest').textContent=t(UI.fDest);
+ document.getElementById('ml-trans').textContent=t(UI.fTrans2);
+ document.getElementById('ml-stay').textContent=t(UI.fStay2);
+ document.getElementById('ml-stayurl').textContent=t(UI.fStayUrl);
+ document.getElementById('ml-note').textContent=t(UI.fNote2);
+ document.getElementById('ml-url').textContent=t(UI.fUrl);
+ document.getElementById('ml-ulabel').textContent=t(UI.fUlabel);
+ document.getElementById('ml-leaf').textContent=t(UI.fLeaf);
+ document.getElementById('m-save').textContent=t(UI.save);
+ document.getElementById('m-cancel').textContent=t(UI.cancel);
+ document.getElementById('m-del').textContent=t(UI.delDay);
+ document.getElementById('modal').classList.add('on');
+}
+function closeDayForm(){document.getElementById('modal').classList.remove('on');editingIndex=null;}
+async function saveDayForm(){
+ const v=id=>document.getElementById(id).value.trim();
+ const dest=v('m-dest');
+ if(!v('m-date')&&!dest){closeDayForm();return;}
+ const day={date:v('m-date'),r:document.getElementById('m-region').value,
+  dest:dest,trans:v('m-trans'),stay:v('m-stay'),stayUrl:v('m-stayurl'),note:v('m-note'),
+  url:v('m-url'),ulabel:v('m-ulabel'),leaf:document.getElementById('m-leaf').checked};
+ day.wd=wdFromDate(day.date);
+ if(!day.note)delete day.note;
+ if(!day.stayUrl)delete day.stayUrl;
+ if(!day.url){delete day.url;delete day.ulabel;}
+ if(editingIndex!=null)itinerary[editingIndex]=day; else itinerary.push(day);
+ await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
+}
+async function delDayFromForm(){
+ if(editingIndex==null)return;
+ if(!confirm(t(UI.confirmDel)))return;
+ itinerary.splice(editingIndex,1);await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
+}
+
+/* ===== expenses ===== */
+function setCur(c){curSel=c;document.getElementById('cur-jpy').classList.toggle('on',c==='JPY');document.getElementById('cur-twd').classList.toggle('on',c==='TWD');}
+function fillCatSelect(){const sel=document.getElementById('e-cat');const v=sel.value;sel.innerHTML=CATS.map(c=>`<option value="${c.id}">${t(c.name)}</option>`).join('');if(v)sel.value=v;}
+function payerOptions(sel){return `<option value="">${t(UI.paidByNone)}</option>`+members.map(m=>`<option value="${m.id}"${sel===m.id?' selected':''}>${esc(m.name)}</option>`).join('');}
+function fillPaidBySelect(){const s=document.getElementById('e-paidby');const v=s.value;s.innerHTML=payerOptions();if(v&&members.find(m=>m.id===v))s.value=v;}
+async function addExpense(){
+ const amt=parseFloat(document.getElementById('e-amount').value);
+ if(!amt||amt<=0){document.getElementById('e-amount').focus();return;}
+ const paidBy=document.getElementById('e-paidby').value;
+ expenses.push({id:Date.now()+''+Math.floor(Math.random()*1000),amount:amt,cur:curSel,cat:document.getElementById('e-cat').value,date:document.getElementById('e-date').value||new Date().toISOString().slice(0,10),note:document.getElementById('e-note').value.trim(),paidBy:paidBy||undefined});
+ await pushField('expenses',expenses);
+ document.getElementById('e-amount').value='';document.getElementById('e-note').value='';
+ renderExpenses();
+}
+async function delExpense(id){expenses=expenses.filter(e=>e.id!==id);await pushField('expenses',expenses);renderExpenses();updateSeedBtns();}
+async function setPayer(id,val){const e=expenses.find(x=>x.id===id);if(!e)return;e.paidBy=val||undefined;await pushField('expenses',expenses);renderExpenses();}
+function renderExpenses(){
+ let jpy=0,twd=0;const byCat={};
+ expenses.forEach(e=>{const v=e.cur==='JPY'?e.amount*rate:e.amount;if(e.cur==='JPY')jpy+=e.amount;else twd+=e.amount;byCat[e.cat]=(byCat[e.cat]||0)+v;});
+ const total=jpy*rate+twd;
+ document.getElementById('exp-twd').textContent='NT$ '+fmt(total);
+ document.getElementById('sum-jpy').textContent='¥'+fmt(jpy);
+ document.getElementById('sum-twd').textContent='NT$'+fmt(twd);
+ const bar=document.getElementById('breakdown'),leg=document.getElementById('breakdown-legend');
+ if(total>0){
+  bar.innerHTML=CATS.filter(c=>byCat[c.id]>0).map(c=>`<div style="width:${(byCat[c.id]/total*100).toFixed(1)}%;background:${c.color}"></div>`).join('');
+  leg.innerHTML=CATS.filter(c=>byCat[c.id]>0).map(c=>`<span><i style="background:${c.color}"></i>${t(c.name)} NT$${fmt(byCat[c.id])}</span>`).join('');
+ }else{bar.innerHTML='';leg.innerHTML='';}
+ const list=document.getElementById('exp-list');
+ if(!expenses.length){list.innerHTML=`<div class="empty">${t(UI.emptyExp)}</div>`;}
+ else{
+  const ordered=[...expenses].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  list.innerHTML=ordered.map(e=>{
+   const c=catById(e.cat),sym=e.cur==='JPY'?'¥':'NT$';
+   const title=e.note||(e._seedNote?t(e._seedNote):t(c.name));
+   const tag=e._seed?' ‧ '+t(UI.estTag):'';
+   const payer=members.length?`<select class="exp-payer" onchange="setPayer('${e.id}',this.value)">${payerOptions(e.paidBy)}</select>`:'';
+   return `<div class="exp-item"><span class="cat-dot" style="background:${c.color}"></span>
+    <div class="meta"><div class="ttl">${esc(title)}</div><div class="sub"><span>${t(c.name)} ‧ ${e.date}${tag}</span>${payer}</div></div>
+    <span class="amt">${sym}${fmt(e.amount)}</span>
+    <button class="del" aria-label="${t(UI.del)}" onclick="delExpense('${e.id}')">×</button></div>`;
+  }).join('');
+ }
+ fillPaidBySelect();renderMembers();renderSettlement();
+}
+
+/* ===== members & settlement ===== */
+async function addMember(){
+ const inp=document.getElementById('member-input');const name=inp.value.trim();
+ if(!name)return;
+ members.push({id:'m'+Date.now()+Math.floor(Math.random()*1000),name});
+ inp.value='';await pushField('members',members);renderExpenses();
+}
+async function removeMember(id){members=members.filter(m=>m.id!==id);await pushField('members',members);renderExpenses();}
+function renderMembers(){
+ document.getElementById('settle-ttl').textContent=t(UI.settleTtl);
+ document.getElementById('members-label').textContent=t(UI.membersLabel);
+ document.getElementById('member-input').placeholder=t(UI.addMemberPh);
+ document.getElementById('members-box').innerHTML=members.length?members.map(m=>`<span class="member-chip">${esc(m.name)}<button onclick="removeMember('${m.id}')" aria-label="${t(UI.del)}">×</button></span>`).join(''):'';
+}
+function computeSettlement(){
+ if(members.length<2)return null;
+ const paid={},share={};members.forEach(m=>{paid[m.id]=0;share[m.id]=0;});
+ let included=0,pool=0;
+ expenses.forEach(e=>{
+  if(!e.paidBy||!members.find(m=>m.id===e.paidBy))return;
+  const v=e.cur==='JPY'?e.amount*rate:e.amount;
+  paid[e.paidBy]+=v;pool+=v;included++;
+  const per=v/members.length;members.forEach(m=>share[m.id]+=per);
+ });
+ if(!included)return {included:0};
+ const net=members.map(m=>({id:m.id,name:m.name,paid:paid[m.id],net:paid[m.id]-share[m.id]}));
+ const cred=net.filter(x=>x.net>0.5).map(x=>({...x})).sort((a,b)=>b.net-a.net);
+ const deb=net.filter(x=>x.net<-0.5).map(x=>({name:x.name,amt:-x.net})).sort((a,b)=>b.amt-a.amt);
+ const tx=[];let i=0,j=0;
+ while(i<cred.length&&j<deb.length){
+  const m=Math.min(cred[i].net,deb[j].amt);
+  tx.push({from:deb[j].name,to:cred[i].name,amount:m});
+  cred[i].net-=m;deb[j].amt-=m;
+  if(cred[i].net<0.5)i++;if(deb[j].amt<0.5)j++;
+ }
+ return {included,pool,perEach:pool/members.length,net,tx};
+}
+function renderSettlement(){
+ const box=document.getElementById('settle-body');
+ if(members.length<2){box.innerHTML=`<div class="settle-hint">${t(UI.noMembers)}</div>`;return;}
+ const r=computeSettlement();
+ if(!r||!r.included){box.innerHTML=`<div class="settle-hint">${t(UI.needPayers)}</div>`;return;}
+ const rows=r.net.map(x=>{
+  const cls=x.net>0.5?'pos':x.net<-0.5?'neg':'zero';
+  const word=x.net>0.5?t(UI.getsWord):x.net<-0.5?t(UI.owesWord):t(UI.evenWord);
+  const val=Math.abs(x.net)<0.5?'':' NT$'+fmt(Math.abs(x.net));
+  return `<div class="balrow"><span class="nm">${esc(x.name)}</span><span class="paid">${t(UI.paidWord)} NT$${fmt(x.paid)}</span><span class="net ${cls}">${word}${val}</span></div>`;
+ }).join('');
+ const plan=r.tx.length?r.tx.map(x=>`<div class="txrow"><span class="who">${esc(x.from)}</span><span class="arr">→</span><span class="who">${esc(x.to)}</span><span class="amt">NT$${fmt(x.amount)}</span></div>`).join(''):`<div class="all-even">${t(UI.allEven)}</div>`;
+ box.innerHTML=`<div class="settle-meta">${t(UI.perEach)}：<b>NT$${fmt(r.perEach)}</b></div>${rows}<div class="plan-ttl">${t(UI.planTtl)}</div>${plan}`;
+}
+
+/* ===== seed ===== */
+async function importTransport(){
+ if(expenses.some(e=>e._seed===SEED_TAG))return;
+ const seeded=TRANSPORT_EST.map((x,i)=>({id:'seed-'+i,amount:x.jpy,cur:'JPY',cat:'transport',date:x.date,note:'',_seed:SEED_TAG,_seedNote:x.note}));
+ expenses=[...expenses,...seeded];
+ await pushField('expenses',expenses);renderExpenses();updateSeedBtns();
+}
+async function removeTransport(){expenses=expenses.filter(e=>e._seed!==SEED_TAG);await pushField('expenses',expenses);renderExpenses();updateSeedBtns();}
+function updateSeedBtns(){
+ const has=expenses.some(e=>e._seed===SEED_TAG);
+ const add=document.getElementById('seed-add'),rm=document.getElementById('seed-rm');
+ add.textContent=has?t(UI.seedAdded):t(UI.seedAdd);add.disabled=has;
+ rm.textContent=t(UI.seedRm);rm.style.display=has?'block':'none';
+}
+function updateSeed(){document.getElementById('seed-sub').innerHTML=seedSubHtml(fmt(SEED_TOTAL*rate));updateSeedBtns();}
+
+/* ===== todo ===== */
+function dayDiff(due){const x=new Date();x.setHours(0,0,0,0);return Math.round((new Date(due+'T00:00:00')-x)/86400000);}
+async function toggleTodo(id){todoState[id]=!todoState[id];await pushField('todos',todoState);renderTodos();}
+function renderTodos(){
+ const sorted=[...TODOS].sort((a,b)=>{const da=!!todoState[a.id],db=!!todoState[b.id];if(da!==db)return da?1:-1;return a.due<b.due?-1:a.due>b.due?1:0;});
+ const done=TODOS.filter(x=>todoState[x.id]).length;
+ document.getElementById('todo-pct').textContent=done+'/'+TODOS.length;
+ document.getElementById('ring-fg').style.strokeDashoffset=(2*Math.PI*23)*(1-done/TODOS.length);
+ document.getElementById('todo-list').innerHTML=sorted.map(x=>{
+  const isDone=!!todoState[x.id];const c=cd(dayDiff(x.due));
+  const dueTxt=x.due.slice(5).replace('-','/')+(x.time?' '+x.time:'');
+  const cdHtml=isDone?'':`<span class="countdown ${c.cls}">${c.txt}</span>`;
+  return `<div class="todo-item ${isDone?'done':''}">
+   <button class="check ${isDone?'on':''}" role="checkbox" aria-checked="${isDone}" aria-label="${esc(t(x.title))}" onclick="toggleTodo('${x.id}')"></button>
+   <div class="ti-body"><div class="ti-ttl">${esc(t(x.title))}</div>
+    <div class="ti-meta"><span class="due">🗓 ${t(UI.opens)} ${dueTxt}</span>${cdHtml}<span>${t(UI.forPre)} ${esc(t(x.forDay))}</span></div>
+    <a class="ti-link" href="${x.url}" target="_blank" rel="noopener">${t(UI.bookNow)}</a>
+   </div></div>`;
+ }).join('');
+}
+
+/* ===== language ===== */
+function applyStatic(){
+ document.documentElement.lang=HTMLLANG[LANG];
+ document.getElementById('eyebrow').textContent=t(UI.eyebrow);
+ document.getElementById('title-a').textContent=t(UI.titleA);
+ document.getElementById('title-b').textContent=t(UI.titleB);
+ document.getElementById('route').innerHTML=UI.route[LANG].map((label,i)=>{
+  const colors=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)','var(--persimmon)'];
+  return `<span class="seg"><i class="dot" style="background:${colors[i]}"></i>${label}</span>`+(i<4?'<span class="arr">→</span>':'');
+ }).join('');
+ document.getElementById('tab-trip').textContent=t(UI.tabTrip);
+ document.getElementById('tab-exp').textContent=t(UI.tabExp);
+ document.getElementById('tab-todo').textContent=t(UI.tabTodo);
+ const rk=UI.regionKey[LANG],rc=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)'];
+ document.getElementById('region-key').innerHTML=rk.map((label,i)=> i<4?`<span><i style="background:${rc[i]}"></i>${label}</span>`:`<span><svg style="width:13px;height:13px;color:var(--momiji)"><use href="#momiji"/></svg>${label}</span>`).join('');
+ document.getElementById('exp-cap').textContent=t(UI.expCap);
+ document.getElementById('lbl-jpy').textContent=t(UI.lblJpy);
+ document.getElementById('lbl-twd').textContent=t(UI.lblTwd);
+ document.getElementById('rate-pre').textContent=t(UI.ratePre);
+ document.getElementById('rate-post').textContent=t(UI.ratePost);
+ document.getElementById('seed-ttl').textContent=t(UI.seedTtl);
+ document.getElementById('f-amount-l').textContent=t(UI.fAmount);
+ document.getElementById('f-cur-l').textContent=t(UI.fCur);
+ document.getElementById('f-cat-l').textContent=t(UI.fCat);
+ document.getElementById('f-date-l').textContent=t(UI.fDate);
+ document.getElementById('f-note-l').textContent=t(UI.fNote);
+ document.getElementById('f-paidby-l').textContent=t(UI.paidBy);
+ document.getElementById('cur-jpy').textContent=t(UI.curJpy);
+ document.getElementById('cur-twd').textContent=t(UI.curTwd);
+ document.getElementById('e-note').placeholder=t(UI.notePh);
+ document.getElementById('addbtn').textContent=t(UI.addEntry);
+ document.getElementById('todo-h3').textContent=t(UI.todoH3);
+ document.getElementById('todo-p').textContent=t(UI.todoP);
+ document.getElementById('footer-text').textContent=t(UI.footer);
+ ['zh','en','ja'].forEach(l=>document.getElementById('lang-'+l).classList.toggle('on',l===LANG));
+}
+async function setLang(l){LANG=l;lsSet('trip:lang',l);renderAll();}
+function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpenses();updateSeed();renderTodos();}
+
+/* ===== init ===== */
+(function init(){
+ LANG=lsGet('trip:lang','zh');
+ document.getElementById('e-date').value=new Date().toISOString().slice(0,10);
+ document.getElementById('rate').addEventListener('input',async e=>{rate=parseFloat(e.target.value)||0;await pushField('settings',{rate});renderExpenses();updateSeed();});
+ renderAll(); // 先畫出介面（資料稍後載入）
+
+ if(dbRef){
+  // 全團即時同步：任何人變更，所有人畫面即時更新
+  dbRef.on('value',snap=>{applySnapshot(snap.val());renderAll();},
+    err=>{console.error('Firebase read failed',err);});
+ }else{
+  // 本機模式（未設定 Firebase 或預覽環境）
+  applySnapshot(lsGet('trip:shared',null));
+  renderAll();
+ }
+})();
+</script>
+</body>
+</html>
