@@ -34,12 +34,6 @@ body{
 .wrap{max-width:680px;margin:0 auto;padding:0 16px}
 
 header{padding:20px 0 14px;text-align:center}
-.langbar{display:flex;justify-content:center;margin-bottom:18px}
-.langseg{display:inline-flex;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
-.langseg button{appearance:none;border:none;background:none;cursor:pointer;font-family:var(--sans);font-size:12.5px;font-weight:700;color:var(--ink-faint);padding:6px 15px;transition:.15s;letter-spacing:.04em}
-.langseg button.on{background:var(--ink);color:var(--paper)}
-.langseg button:focus-visible{outline:2px solid var(--slate);outline-offset:-2px}
-
 .eyebrow{font-size:12px;letter-spacing:.32em;color:var(--momiji);font-weight:700;text-indent:.32em;margin-bottom:10px}
 h1{font-family:var(--serif);font-weight:700;font-size:clamp(26px,6.6vw,38px);letter-spacing:.05em;line-height:1.15;color:var(--ink)}
 h1 .leaf{display:inline-block;vertical-align:-3px;width:.85em;height:.85em;margin:0 .14em}
@@ -251,11 +245,6 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
 
 <header>
   <div class="wrap">
-    <div class="langbar"><div class="langseg" role="group" aria-label="language">
-      <button id="lang-zh" onclick="setLang('zh')">中</button>
-      <button id="lang-en" onclick="setLang('en')">EN</button>
-      <button id="lang-ja" onclick="setLang('ja')">日</button>
-    </div></div>
     <div class="eyebrow" id="eyebrow"></div>
     <h1><span id="title-a"></span><svg class="leaf" style="color:var(--momiji)"><use href="#momiji"/></svg><span id="title-b"></span></h1>
     <div class="daterange">10 / 21　—　11 / 04</div>
@@ -385,10 +374,10 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
    3) 專案設定 → 你的應用程式 → 複製 firebaseConfig 貼到下面
    4) TRIP_ID 是全團共用代號；規則設為「需登入才能讀寫」，可擋直接打資料庫的掃描 */
 const FIREBASE_CONFIG={
-  apiKey:"AIzaSyBn31fdiicqypyJoiB_3wnfLsS6osmm4Kc",
-  authDomain:"trip-850a4.firebaseapp.com",
-  databaseURL:"https://trip-850a4-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:"trip-850a4"
+  apiKey:"PASTE_API_KEY",
+  authDomain:"PASTE.firebaseapp.com",
+  databaseURL:"https://PASTE-default-rtdb.firebaseio.com",
+  projectId:"PASTE_PROJECT_ID"
 };
 const TRIP_ID="chubu-2026-7k3p9q";
 
@@ -947,14 +936,12 @@ function applyStatic(){
  document.getElementById('todo-h3').textContent=t(UI.todoH3);
  document.getElementById('todo-p').textContent=t(UI.todoP);
  document.getElementById('footer-text').textContent=t(UI.footer);
- ['zh','en','ja'].forEach(l=>document.getElementById('lang-'+l).classList.toggle('on',l===LANG));
 }
-async function setLang(l){LANG=l;lsSet('trip:lang',l);renderAll();}
 function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpenses();updateSeed();renderTodos();}
 
 /* ===== init ===== */
 (function init(){
- LANG=lsGet('trip:lang','zh');
+ LANG='zh';
  document.getElementById('e-date').value=new Date().toISOString().slice(0,10);
  document.getElementById('rate').addEventListener('input',async e=>{rate=parseFloat(e.target.value)||0;await pushField('settings',{rate});renderExpenses();updateSeed();});
  renderAll(); // 先畫出介面（資料稍後載入）
