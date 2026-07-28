@@ -381,7 +381,7 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
    之後更新本檔不會洗掉設定）。未設定時會自動退回本機儲存模式。 */
 const CFG=(typeof window!=='undefined'&&window.TRIP_CONFIG)||{};
 const FIREBASE_CONFIG=CFG.firebase||{};
-const TRIP_ID=CFG.tripId||'chubu-2026-7k3p9q';
+const TRIP_ID=CFG.tripId||'PASTE_YOUR_TRIP_ID';
 
 /* ===== storage layer =====
    共用資料（記帳/待辦/匯率）：有設定 Firebase → 全團即時同步；否則退回本機 localStorage。
