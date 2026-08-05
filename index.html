@@ -425,7 +425,7 @@ function clone(x){return JSON.parse(JSON.stringify(x));}
 /* ===== i18n ===== */
 let LANG='zh';
 const t=o=>o==null?'':(typeof o==='string'?o:(o[LANG]||o.zh||''));
-const WD={zh:['一','二','三','四','五','六','日'],en:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],ja:['月','火','水','木','金','土','日']};
+const WD=['一','二','三','四','五','六','日'];
 const HTMLLANG={zh:'zh-Hant',en:'en',ja:'ja'};
 
 const UI={
@@ -516,16 +516,16 @@ function seedSubHtml(twd){
 /* ===== data ===== */
 const REGION={persimmon:'var(--persimmon)',slate:'var(--slate)',cedar:'var(--cedar)',hida:'var(--hida)',home:'var(--home)'};
 const STAY={
- ngo:{zh:'名古屋花園皇宮飯店',en:'Nagoya Garden Palace Hotel',ja:'名古屋ガーデンパレス',url:'https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA'},
- toy:{zh:'富山地鐵飯店',en:'Toyama Chitetsu Hotel',ja:'富山地鉄ホテル',url:'https://maps.app.goo.gl/VprwdcATF86Ttm9YA'},
- mat:{zh:'東橫 INN 松本站東口',en:'Toyoko Inn Matsumoto Sta. East',ja:'東横INN松本駅東口',url:'https://maps.app.goo.gl/RU9hxcBN87C51DPTA'},
- tak:{zh:'Tabino Hotel Satellite（高山）',en:'Tabino Hotel Satellite (Takayama)',ja:'Tabino Hotel Satellite（高山）',url:'https://maps.app.goo.gl/bDSbYodPWsvwXU3R9'},
- nm:{zh:'東橫 INN 名古屋丸之內',en:'Toyoko Inn Nagoya Marunouchi',ja:'東横INN名古屋丸の内',url:'https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7'},
- home:{zh:'溫暖的家 ♡',en:'Home sweet home ♡',ja:'我が家 ♡'}
+ ngo:{zh:'名古屋花園皇宮飯店',url:'https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA'},
+ toy:{zh:'富山地鐵飯店',url:'https://maps.app.goo.gl/VprwdcATF86Ttm9YA'},
+ mat:{zh:'東橫 INN 松本站東口',url:'https://maps.app.goo.gl/RU9hxcBN87C51DPTA'},
+ tak:{zh:'Tabino Hotel Satellite（高山）',url:'https://maps.app.goo.gl/bDSbYodPWsvwXU3R9'},
+ nm:{zh:'東橫 INN 名古屋丸之內',url:'https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7'},
+ home:{zh:'溫暖的家 ♡'}
 };
 const URL_E5489='https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc';
-const L_E5489={zh:'JR e5489 訂票',en:'Book on JR e5489',ja:'JR e5489 で予約'};
-const L_HWB={zh:'高速巴士 訂票',en:'Book highway bus',ja:'高速バス予約'};
+const L_E5489='JR e5489 訂票';
+const L_HWB='高速巴士 訂票';
 
 const REGION_OPTS=[
  {key:'persimmon',color:'var(--persimmon)'},
@@ -698,7 +698,7 @@ function renderTimeline(){
   const stayHtml=stayUrl?`<a class="stay-link" href="${esc(stayUrl)}" target="_blank" rel="noopener">${stayTxt} ↗</a>`:stayTxt;
   return `<div class="day"><div class="node"><div class="num" style="background:${col}">${String(i+1).padStart(2,'0')}</div>${leaf}</div>
    <div class="card" style="border-left-color:${col}">
-    <div class="top"><span class="wd" style="background:${col}">${WD[LANG][wd]}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
+    <div class="top"><span class="wd" style="background:${col}">${WD[wd]}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
     <div class="row"><span class="lbl">${t(UI.rowTrans)}</span><span>${esc(t(d.trans))}</span></div>
     <div class="row"><span class="lbl">${t(UI.rowStay)}</span><span>${stayHtml}</span></div>
     ${noteRow}${link}${tools}
