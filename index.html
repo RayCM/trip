@@ -224,6 +224,9 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
 .m-grid label{font-size:11px;font-weight:700;color:var(--ink-faint);letter-spacing:.04em}
 .m-grid input,.m-grid select,.m-grid textarea{font-family:var(--sans);font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card);width:100%;resize:vertical}
 .m-grid input:focus,.m-grid select:focus,.m-grid textarea:focus{outline:2px solid var(--slate);outline-offset:0}
+.m-grid input[readonly]{background:#f2ede3;color:var(--ink-faint);cursor:default}
+.m-grid input[readonly]:focus{outline:none}
+.m-hint{font-size:10.5px;color:var(--ink-faint);letter-spacing:.03em;line-height:1.4}
 .m-check label{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
 .m-check input{width:18px;height:18px;accent-color:var(--momiji)}
 .m-actions{display:flex;gap:10px;margin-top:18px}
@@ -347,7 +350,7 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
   <div class="modal-card">
     <h3 id="m-title"></h3>
     <div class="m-grid">
-      <div class="field"><label id="ml-date" for="m-date"></label><input type="text" id="m-date" placeholder="10/26"></div>
+      <div class="field"><label id="ml-date" for="m-date"></label><input type="text" id="m-date" placeholder="10/26"><span class="m-hint" id="m-date-hint">日期依順序自動計算</span></div>
       <div class="field"><label id="ml-region" for="m-region"></label><select id="m-region"></select></div>
       <div class="field full"><label id="ml-dest" for="m-dest"></label><input type="text" id="m-dest"></div>
       <div class="field full"><label id="ml-trans" for="m-trans"></label><textarea id="m-trans" rows="3"></textarea></div>
@@ -419,110 +422,106 @@ function applySnapshot(d){
 }
 function clone(x){return JSON.parse(JSON.stringify(x));}
 
-/* ===== i18n ===== */
-let LANG='zh';
-const t=o=>o==null?'':(typeof o==='string'?o:(o[LANG]||o.zh||''));
-const WD={zh:['一','二','三','四','五','六','日'],en:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],ja:['月','火','水','木','金','土','日']};
-const HTMLLANG={zh:'zh-Hant',en:'en',ja:'ja'};
+/* ===== text & labels ===== */
+// Firebase 上的舊資料仍是 {zh,en,ja} 物件，因此保留讀 o.zh 的能力
+const t=o=>o==null?'':(typeof o==='string'?o:(o.zh||''));
+const WD=['一','二','三','四','五','六','日'];
 
 const UI={
- eyebrow:{zh:'2026 ‧ 紅葉之旅',en:'2026 ‧ AUTUMN LEAVES',ja:'2026 ‧ 紅葉の旅'},
- titleA:{zh:'日本中部',en:'Central Japan',ja:'中部日本'},
- titleB:{zh:'15 日自由行',en:'15 Days',ja:'15日間の旅'},
- route:{zh:['名古屋','北陸','信州','飛驒','名古屋'],en:['Nagoya','Hokuriku','Shinshu','Hida','Nagoya'],ja:['名古屋','北陸','信州','飛騨','名古屋']},
- tabTrip:{zh:'行程',en:'Itinerary',ja:'行程'},
- tabExp:{zh:'記帳',en:'Expenses',ja:'家計簿'},
- tabTodo:{zh:'訂票',en:'Bookings',ja:'予約'},
- regionKey:{zh:['名古屋','北陸（富山）','信州（松本）','飛驒（高山）','紅葉重點'],en:['Nagoya','Hokuriku (Toyama)','Shinshu (Matsumoto)','Hida (Takayama)','Foliage highlight'],ja:['名古屋','北陸（富山）','信州（松本）','飛騨（高山）','紅葉スポット']},
- rowTrans:{zh:'交通',en:'Transit',ja:'交通'},
- rowStay:{zh:'住宿',en:'Stay',ja:'宿泊'},
- expCap:{zh:'總支出（估算）',en:'TOTAL (ESTIMATED)',ja:'合計（概算）'},
- lblJpy:{zh:'日圓',en:'Yen',ja:'円'},
- lblTwd:{zh:'台幣',en:'TWD',ja:'台湾ドル'},
- ratePre:{zh:'匯率　¥1 ≈ NT$',en:'Rate　¥1 ≈ NT$',ja:'レート　¥1 ≈ NT$'},
- ratePost:{zh:'（可改）',en:'(editable)',ja:'（変更可）'},
- seedTtl:{zh:'🚃 交通預估（每人）',en:'🚃 Transport estimate (per person)',ja:'🚃 交通費の概算（1人）'},
- seedAdd:{zh:'填入交通預估',en:'Add transport estimate',ja:'交通概算を追加'},
- seedAdded:{zh:'已填入 ✓',en:'Added ✓',ja:'追加済み ✓'},
- seedRm:{zh:'移除',en:'Remove',ja:'削除'},
- fAmount:{zh:'金額',en:'Amount',ja:'金額'},
- fCur:{zh:'幣別',en:'Currency',ja:'通貨'},
- fCat:{zh:'分類',en:'Category',ja:'分類'},
- fDate:{zh:'日期',en:'Date',ja:'日付'},
- fNote:{zh:'說明（選填）',en:'Note (optional)',ja:'メモ（任意）'},
- curJpy:{zh:'¥ 日圓',en:'¥ JPY',ja:'¥ 円'},
- curTwd:{zh:'NT$ 台幣',en:'NT$ TWD',ja:'NT$ 台ドル'},
- notePh:{zh:'例：富山地鐵飯店、近江町市場午餐…',en:'e.g. Toyama hotel, Omicho lunch…',ja:'例：富山のホテル、近江町ランチ…'},
- addEntry:{zh:'＋ 新增一筆',en:'+ Add entry',ja:'＋ 1件追加'},
- emptyExp:{zh:'還沒有任何花費，點上面新增第一筆吧。',en:'No expenses yet — add your first above.',ja:'まだ支出がありません。上から追加してください。'},
- estTag:{zh:'估算',en:'est.',ja:'概算'},
- del:{zh:'刪除',en:'Delete',ja:'削除'},
- todoH3:{zh:'訂票待辦',en:'Booking to-do',ja:'予約のTo Do'},
- todoP:{zh:'按開賣日排序，記得開賣當天準時搶票',en:'Sorted by on-sale date — be ready when booking opens',ja:'発売日順。発売当日に忘れず予約を'},
- opens:{zh:'開賣',en:'Opens',ja:'発売'},
- forPre:{zh:'用於',en:'For',ja:'対象'},
- bookNow:{zh:'前往訂票 ↗',en:'Book now ↗',ja:'予約する ↗'},
- footer:{zh:'資料會自動儲存於此裝置 ‧ 建議「加入主畫面」當作行動小幫手',en:'Data is saved automatically on this device ‧ Add to Home Screen to use it on the go',ja:'データはこの端末に自動保存されます ‧「ホーム画面に追加」で旅のお供に'},
- editOn:{zh:'編輯行程',en:'Edit',ja:'編集'},
- editOff:{zh:'完成',en:'Done',ja:'完了'},
- addDay:{zh:'＋ 新增一天',en:'+ Add a day',ja:'＋ 日を追加'},
- mNewTitle:{zh:'新增行程',en:'New day',ja:'日を追加'},
- mEditTitle:{zh:'編輯行程',en:'Edit day',ja:'日を編集'},
- fDate2:{zh:'日期（例 10/26）',en:'Date (e.g. 10/26)',ja:'日付（例 10/26）'},
- fRegion:{zh:'區域',en:'Region',ja:'エリア'},
- fDest:{zh:'目的地',en:'Destination',ja:'目的地'},
- fTrans2:{zh:'交通與行程',en:'Transit & plan',ja:'交通・行程'},
- fStay2:{zh:'住宿',en:'Lodging',ja:'宿泊'},
- fStayUrl:{zh:'住宿網址（選填）',en:'Lodging URL (optional)',ja:'宿泊先URL（任意）'},
- fNote2:{zh:'備註（選填）',en:'Note (optional)',ja:'メモ（任意）'},
- fUrl:{zh:'訂票網址（選填）',en:'Booking URL (optional)',ja:'予約URL（任意）'},
- fUlabel:{zh:'按鈕文字（選填）',en:'Button label (optional)',ja:'ボタン名（任意）'},
- fLeaf:{zh:'標為紅葉重點',en:'Mark as foliage highlight',ja:'紅葉スポットに設定'},
- save:{zh:'儲存',en:'Save',ja:'保存'},
- cancel:{zh:'取消',en:'Cancel',ja:'キャンセル'},
- delDay:{zh:'刪除這天',en:'Delete this day',ja:'この日を削除'},
- confirmDel:{zh:'確定刪除這天行程？',en:'Delete this day?',ja:'この日を削除しますか？'},
- bookGeneric:{zh:'訂票連結',en:'Booking link',ja:'予約リンク'},
- regions:{zh:['名古屋','北陸','信州','飛驒','其他'],en:['Nagoya','Hokuriku','Shinshu','Hida','Other'],ja:['名古屋','北陸','信州','飛騨','その他']},
- settleTtl:{zh:'結算分帳',en:'Settle up',ja:'割り勘清算'},
- membersLabel:{zh:'同行成員',en:'Members',ja:'メンバー'},
- addMemberPh:{zh:'輸入名字後按 ＋',en:'Name, then +',ja:'名前を入力して ＋'},
- paidBy:{zh:'誰付的',en:'Paid by',ja:'支払者'},
- paidByNone:{zh:'—　未指定',en:'—　unassigned',ja:'—　未指定'},
- noMembers:{zh:'先在下方新增同行成員，就能自動分帳。',en:'Add members below to split costs automatically.',ja:'下でメンバーを追加すると自動で割り勘します。'},
- needPayers:{zh:'在各筆花費指定「誰付的」，這裡就會自動算出怎麼分。',en:'Set “paid by” on expenses and the split shows up here.',ja:'各支出に「支払者」を設定すると精算が表示されます。'},
- paidWord:{zh:'已付',en:'paid',ja:'支払'},
- owesWord:{zh:'應付',en:'owes',ja:'支払'},
- getsWord:{zh:'應收',en:'gets back',ja:'受取'},
- evenWord:{zh:'結清',en:'settled',ja:'精算済'},
- planTtl:{zh:'怎麼還',en:'Who pays whom',ja:'精算方法'},
- allEven:{zh:'目前剛好結清，不用互轉 🎉',en:'All settled — no transfers needed 🎉',ja:'すべて精算済み 🎉'},
- perEach:{zh:'每人均攤',en:'per person',ja:'1人あたり'}
+ eyebrow:'2026 ‧ 紅葉之旅',
+ titleA:'日本中部',
+ titleB:'15 日自由行',
+ route:['名古屋','北陸','信州','飛驒','名古屋'],
+ tabTrip:'行程',
+ tabExp:'記帳',
+ tabTodo:'訂票',
+ regionKey:['名古屋','北陸（富山）','信州（松本）','飛驒（高山）','紅葉重點'],
+ rowTrans:'交通',
+ rowStay:'住宿',
+ expCap:'總支出（估算）',
+ lblJpy:'日圓',
+ lblTwd:'台幣',
+ ratePre:'匯率　¥1 ≈ NT$',
+ ratePost:'（可改）',
+ seedTtl:'🚃 交通預估（每人）',
+ seedAdd:'填入交通預估',
+ seedAdded:'已填入 ✓',
+ seedRm:'移除',
+ fAmount:'金額',
+ fCur:'幣別',
+ fCat:'分類',
+ fDate:'日期',
+ fNote:'說明（選填）',
+ curJpy:'¥ 日圓',
+ curTwd:'NT$ 台幣',
+ notePh:'例：富山地鐵飯店、近江町市場午餐…',
+ addEntry:'＋ 新增一筆',
+ emptyExp:'還沒有任何花費，點上面新增第一筆吧。',
+ estTag:'估算',
+ del:'刪除',
+ todoH3:'訂票待辦',
+ todoP:'按開賣日排序，記得開賣當天準時搶票',
+ opens:'開賣',
+ forPre:'用於',
+ bookNow:'前往訂票 ↗',
+ footer:'資料會自動儲存於此裝置 ‧ 建議「加入主畫面」當作行動小幫手',
+ editOn:'編輯行程',
+ editOff:'完成',
+ addDay:'＋ 新增一天',
+ mNewTitle:'新增行程',
+ mEditTitle:'編輯行程',
+ fDate2:'日期（例 10/26）',
+ fRegion:'區域',
+ fDest:'目的地',
+ fTrans2:'交通與行程',
+ fStay2:'住宿',
+ fStayUrl:'住宿網址（選填）',
+ fNote2:'備註（選填）',
+ fUrl:'訂票網址（選填）',
+ fUlabel:'按鈕文字（選填）',
+ fLeaf:'標為紅葉重點',
+ save:'儲存',
+ cancel:'取消',
+ delDay:'刪除這天',
+ confirmDel:'確定刪除這天行程？',
+ bookGeneric:'訂票連結',
+ regions:['名古屋','北陸','信州','飛驒','其他'],
+ settleTtl:'結算分帳',
+ membersLabel:'同行成員',
+ addMemberPh:'輸入名字後按 ＋',
+ paidBy:'誰付的',
+ paidByNone:'—　未指定',
+ noMembers:'先在下方新增同行成員，就能自動分帳。',
+ needPayers:'在各筆花費指定「誰付的」，這裡就會自動算出怎麼分。',
+ paidWord:'已付',
+ owesWord:'應付',
+ getsWord:'應收',
+ evenWord:'結清',
+ planTtl:'怎麼還',
+ allEven:'目前剛好結清，不用互轉 🎉',
+ perEach:'每人均攤'
 };
 function cd(n){
- const L={zh:{l:'剩 '+n+' 天',t:'明天',td:'今天！',o:'已過 '+(-n)+' 天'},en:{l:n+' days left',t:'Tomorrow',td:'Today!',o:n===-1?'1 day ago':(-n)+' days ago'},ja:{l:'残り '+n+' 日',t:'明日',td:'本日！',o:(-n)+'日経過'}}[LANG];
+ const L={l:'剩 '+n+' 天',t:'明天',td:'今天！',o:'已過 '+(-n)+' 天'};
  if(n>1)return{cls:'cd-ok',txt:L.l};if(n===1)return{cls:'cd-soon',txt:L.t};if(n===0)return{cls:'cd-soon',txt:L.td};return{cls:'cd-over',txt:L.o};
 }
 function seedSubHtml(twd){
- const T={zh:`依官網最新票價估算 17 段交通，合計約 <b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。可一鍵填入下方記帳，再依實際金額修改或刪除。`,
- en:`Estimated from the latest official fares across 17 legs — about <b>¥${fmt(SEED_TOTAL)}</b> (≈ NT$${twd}). Add them to your log in one tap, then edit or delete to match actual costs.`,
- ja:`公式の最新運賃をもとに17区間を概算、合計 約<b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。ワンタップで下の家計簿に追加、実額に合わせて編集・削除できます。`};
- return T[LANG];
+ return `依官網最新票價估算 17 段交通，合計約 <b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。可一鍵填入下方記帳，再依實際金額修改或刪除。`;
 }
 
 /* ===== data ===== */
 const REGION={persimmon:'var(--persimmon)',slate:'var(--slate)',cedar:'var(--cedar)',hida:'var(--hida)',home:'var(--home)'};
 const STAY={
- ngo:{zh:'名古屋花園皇宮飯店',en:'Nagoya Garden Palace Hotel',ja:'名古屋ガーデンパレス',url:'https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA'},
- toy:{zh:'富山地鐵飯店',en:'Toyama Chitetsu Hotel',ja:'富山地鉄ホテル',url:'https://maps.app.goo.gl/VprwdcATF86Ttm9YA'},
- mat:{zh:'東橫 INN 松本站東口',en:'Toyoko Inn Matsumoto Sta. East',ja:'東横INN松本駅東口',url:'https://maps.app.goo.gl/RU9hxcBN87C51DPTA'},
- tak:{zh:'Tabino Hotel Satellite（高山）',en:'Tabino Hotel Satellite (Takayama)',ja:'Tabino Hotel Satellite（高山）',url:'https://maps.app.goo.gl/bDSbYodPWsvwXU3R9'},
- nm:{zh:'東橫 INN 名古屋丸之內',en:'Toyoko Inn Nagoya Marunouchi',ja:'東横INN名古屋丸の内',url:'https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7'},
- home:{zh:'溫暖的家 ♡',en:'Home sweet home ♡',ja:'我が家 ♡'}
+ ngo:{zh:'名古屋花園皇宮飯店',url:'https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA'},
+ toy:{zh:'富山地鐵飯店',url:'https://maps.app.goo.gl/VprwdcATF86Ttm9YA'},
+ mat:{zh:'東橫 INN 松本站東口',url:'https://maps.app.goo.gl/RU9hxcBN87C51DPTA'},
+ tak:{zh:'Tabino Hotel Satellite（高山）',url:'https://maps.app.goo.gl/bDSbYodPWsvwXU3R9'},
+ nm:{zh:'東橫 INN 名古屋丸之內',url:'https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7'},
+ home:{zh:'溫暖的家 ♡'}
 };
 const URL_E5489='https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc';
-const L_E5489={zh:'JR e5489 訂票',en:'Book on JR e5489',ja:'JR e5489 で予約'};
-const L_HWB={zh:'高速巴士 訂票',en:'Book highway bus',ja:'高速バス予約'};
+const L_E5489='JR e5489 訂票';
+const L_HWB='高速巴士 訂票';
 
 const REGION_OPTS=[
  {key:'persimmon',color:'var(--persimmon)'},
@@ -533,129 +532,129 @@ const REGION_OPTS=[
 ];
 const DEFAULT_DAYS=[
  {n:1,date:'10/21',wd:2,r:'persimmon',stay:STAY.ngo,
-  dest:{zh:'名古屋',en:'Nagoya',ja:'名古屋'},
-  trans:{zh:'國泰 CX530（11:30–15:30）抵中部機場。名鐵特急 μ-Sky 往金山站（24 分），轉名城線至榮站。',en:'Cathay CX530 (11:30–15:30) to Chubu Centrair. Meitetsu μ-Sky to Kanayama (24 min), transfer to Meijo Line to Sakae.',ja:'キャセイ CX530（11:30–15:30）で中部国際空港着。名鉄特急 μ-SKY で金山駅（24分）、名城線で栄駅。'}},
+  dest:'名古屋',
+  trans:'國泰 CX530（11:30–15:30）抵中部機場。名鐵特急 μ-Sky 往金山站（24 分），轉名城線至榮站。'},
  {n:2,date:'10/22',wd:3,r:'persimmon',stay:STAY.ngo,
-  dest:{zh:'犬山城・熱田神宮',en:'Inuyama Castle & Atsuta Shrine',ja:'犬山城・熱田神宮'},
-  trans:{zh:'上午：名鐵名古屋站搭特急至犬山站（25 分），步行至犬山城下町。下午：熱田神宮。',en:'AM: Meitetsu limited express Nagoya→Inuyama (25 min), walk the castle town. PM: Atsuta Shrine.',ja:'午前：名鉄名古屋から特急で犬山駅（25分）、城下町を散策。午後：熱田神宮。'}},
+  dest:'犬山城・熱田神宮',
+  trans:'上午：名鐵名古屋站搭特急至犬山站（25 分），步行至犬山城下町。下午：熱田神宮。'},
  {n:3,date:'10/23',wd:4,r:'slate',stay:STAY.toy,
-  dest:{zh:'富山',en:'Toyama',ja:'富山'},
-  trans:{zh:'上午：JR 特急飛驒 3 號（ひだ3号 08:43–12:32）到富山。下午：富岩運河環水公園。',en:'AM: JR Ltd. Exp. Hida 3 (08:43–12:32) to Toyama. PM: Fugan Canal Kansui Park.',ja:'午前：JR特急ひだ3号（08:43–12:32）で富山へ。午後：富岩運河環水公園。'},
-  note:{zh:'9/22 23:00 開放訂票',en:'Booking opens 9/22 23:00',ja:'9/22 23:00 予約開始'},url:URL_E5489,ulabel:L_E5489},
+  dest:'富山',
+  trans:'上午：JR 特急飛驒 3 號（ひだ3号 08:43–12:32）到富山。下午：富岩運河環水公園。',
+  note:'9/22 23:00 開放訂票',url:URL_E5489,ulabel:L_E5489},
  {n:4,date:'10/24',wd:5,r:'slate',stay:STAY.toy,
-  dest:{zh:'雨晴海岸',en:'Amaharashi Coast',ja:'雨晴海岸'},
-  trans:{zh:'行李寄放富山站。搭「愛之風富山鐵道」至高岡，轉 11:16 JR 冰見線到雨晴站。傍晚：富山市區。',en:'Store luggage at Toyama Sta. Ainokaze Toyama Railway to Takaoka, transfer to 11:16 JR Himi Line to Amaharashi. Evening: central Toyama.',ja:'荷物を富山駅に預け、あいの風とやま鉄道で高岡へ、11:16 JR氷見線で雨晴駅。夕方：富山市街。'},
-  note:{zh:'冰見線約一小時一班，務必查好回程；全程可用 IC 卡，高岡轉車不出站。雲層太厚可與 10/25 對調。',en:'Himi Line runs roughly hourly — check return times. IC cards work throughout; no need to exit at Takaoka. If clouds are heavy, swap with 10/25.',ja:'氷見線は約1時間に1本、帰りの時刻を必ず確認。全区間ICカード可、高岡乗換は改札を出ない。雲が厚ければ10/25と入替可。'}},
+  dest:'雨晴海岸',
+  trans:'行李寄放富山站。搭「愛之風富山鐵道」至高岡，轉 11:16 JR 冰見線到雨晴站。傍晚：富山市區。',
+  note:'冰見線約一小時一班，務必查好回程；全程可用 IC 卡，高岡轉車不出站。雲層太厚可與 10/25 對調。'},
  {n:5,date:'10/25',wd:6,r:'slate',stay:STAY.toy,
-  dest:{zh:'金澤・兼六園・近江町市場・東茶屋街',en:'Kanazawa: Kenrokuen, Omicho, Higashi Chaya',ja:'金沢・兼六園・近江町市場・東茶屋街'},
-  trans:{zh:'金澤站 7 號乘車處搭「城下町金澤周遊巴士（右迴）」至兼六園下・金澤城。午餐近江町市場海鮮，下午東茶屋街金箔冰淇淋，傍晚回富山。',en:'From Kanazawa Sta. stop 7, Kenrokuen Shuttle (clockwise) to Kenrokuen-shita. Seafood lunch at Omicho, gold-leaf ice cream in Higashi Chaya, back to Toyama by evening.',ja:'金沢駅7番のりばから城下まち金沢周遊バス（右回り）で兼六園下・金沢城へ。近江町市場で海鮮ランチ、東茶屋街で金箔ソフト、夕方富山へ。'},
-  note:{zh:'回富山後到電鐵富山站售票機，用 QR Code 領取立山黑部車票。',en:'Back in Toyama, collect Tateyama Kurobe tickets from the machine at Dentetsu-Toyama Sta. via QR code.',ja:'富山に戻ったら電鉄富山駅の券売機でQRコードを使い立山黒部のきっぷを受け取る。'}},
+  dest:'金澤・兼六園・近江町市場・東茶屋街',
+  trans:'金澤站 7 號乘車處搭「城下町金澤周遊巴士（右迴）」至兼六園下・金澤城。午餐近江町市場海鮮，下午東茶屋街金箔冰淇淋，傍晚回富山。',
+  note:'回富山後到電鐵富山站售票機，用 QR Code 領取立山黑部車票。'},
  {n:6,date:'10/26',wd:0,r:'cedar',stay:STAY.mat,leaf:true,
-  dest:{zh:'立山黑部（橫越）',en:'Tateyama Kurobe (Traverse)',ja:'立山黒部（横断）'},
-  trans:{zh:'05:00 富山站寄行李。步行至電鐵富山站搭 05:50 富山地鐵至立山站（07:01 到），經纜車・高原巴士・無軌電車共 6 種交通工具橫越，傍晚抵信濃大町轉巴士往松本。',en:'05:00 forward luggage at Toyama Sta. 05:50 Toyama Chitetsu from Dentetsu-Toyama to Tateyama (arr. 07:01), then cross via 6 modes — cablecar, highland bus, trolleybus & more. Evening: Shinano-Omachi, bus to Matsumoto.',ja:'05:00 富山駅で荷物発送。電鉄富山駅05:50の富山地鉄で立山駅（07:01着）、ケーブルカー・高原バス・トロリーバスなど6種で横断。夕方、信濃大町からバスで松本へ。'},
-  note:{zh:'7/31 09:00 官網搶早鳥票。行李代運：富山寄、信濃大町取（最早 05:00、限當天件）。隨身小背包裝貴重物，洋蔥式穿法＋墨鏡防雪盲。',en:'Grab early-bird tickets on the official site 7/31 09:00. Luggage forwarding: send from Toyama, collect at Shinano-Omachi (from 05:00, same-day only). Valuables in a small backpack; dress in layers; sunglasses against snow glare.',ja:'7/31 09:00 公式サイトで早割確保。手荷物輸送：富山発・信濃大町受取（最早05:00・当日便のみ）。貴重品は小型リュック、重ね着＋雪目防止サングラス。'},
-  url:'https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html',ulabel:{zh:'立山黑部 官網',en:'Tateyama Kurobe official',ja:'立山黒部 公式'}},
+  dest:'立山黑部（橫越）',
+  trans:'05:00 富山站寄行李。步行至電鐵富山站搭 05:50 富山地鐵至立山站（07:01 到），經纜車・高原巴士・無軌電車共 6 種交通工具橫越，傍晚抵信濃大町轉巴士往松本。',
+  note:'7/31 09:00 官網搶早鳥票。行李代運：富山寄、信濃大町取（最早 05:00、限當天件）。隨身小背包裝貴重物，洋蔥式穿法＋墨鏡防雪盲。',
+  url:'https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html',ulabel:'立山黑部 官網'},
  {n:7,date:'10/27',wd:1,r:'cedar',stay:STAY.mat,
-  dest:{zh:'戶隱神社奧社・善光寺',en:'Togakushi Okusha & Zenkoji',ja:'戸隠神社奥社・善光寺'},
-  trans:{zh:'上午：JR（07:30→08:45）至長野站，7 號巴士站搭 09:20 巴士往戶隱奧社入口。下午：13:34 巴士回長野，1 號站搭公車到善光寺大門，傍晚回松本。',en:'AM: JR (07:30→08:45) to Nagano, stop 7 → 09:20 bus to Togakushi Okusha-iriguchi. PM: 13:34 bus back to Nagano, stop 1 to Zenkoji-Omon. Evening: back to Matsumoto.',ja:'午前：JR（07:30→08:45）で長野駅、7番のりば09:20のバスで戸隠奥社入口へ。午後：13:34のバスで長野へ、1番のりばで善光寺大門。夕方、松本へ。'},
-  note:{zh:'9/26 23:00 訂票。長野善光寺出口 7 號站轉 70 號巴士；去程坐左側（AB）、回程靠右（CD）。',en:'Book 9/26 23:00. From Nagano Zenkoji exit, stop 7, bus #70; sit left (AB) outbound, right (CD) back.',ja:'9/26 23:00 予約。長野駅善光寺口7番から70番バス。往路は左（AB）、復路は右（CD）の席が◎。'},
+  dest:'戶隱神社奧社・善光寺',
+  trans:'上午：JR（07:30→08:45）至長野站，7 號巴士站搭 09:20 巴士往戶隱奧社入口。下午：13:34 巴士回長野，1 號站搭公車到善光寺大門，傍晚回松本。',
+  note:'9/26 23:00 訂票。長野善光寺出口 7 號站轉 70 號巴士；去程坐左側（AB）、回程靠右（CD）。',
   url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',ulabel:L_HWB},
  {n:8,date:'10/28',wd:2,r:'cedar',stay:STAY.mat,leaf:true,
-  dest:{zh:'上高地',en:'Kamikochi',ja:'上高地'},
-  trans:{zh:'去程：松本巴士總站搭 5:30 直達巴士到上高地。回程：15:15 巴士到新島島站轉電車回松本（已含電車票）。',en:'Out: 5:30 direct bus from Matsumoto Bus Terminal to Kamikochi. Back: 15:15 bus to Shin-Shimashima, train to Matsumoto (train fare included).',ja:'往路：松本バスターミナル5:30の直行バスで上高地へ。復路：15:15のバスで新島々駅、電車で松本へ（電車賃込み）。'},
-  note:{zh:'9/27 23:00 訂票。清晨極冷可能結霜，禦寒裝備同立山黑部，中午回溫再脫。',en:'Book 9/27 23:00. Bitterly cold at dawn, possible frost — same warm gear as Tateyama; shed layers by midday.',ja:'9/27 23:00 予約。早朝は極寒で霜の可能性、防寒は立山黒部と同様。昼に暖かくなったら脱ぐ。'},
-  url:'https://japanbusonline.com/zh-tw/DestinationSearch/1',ulabel:{zh:'巴士 訂票',en:'Book bus',ja:'バス予約'}},
+  dest:'上高地',
+  trans:'去程：松本巴士總站搭 5:30 直達巴士到上高地。回程：15:15 巴士到新島島站轉電車回松本（已含電車票）。',
+  note:'9/27 23:00 訂票。清晨極冷可能結霜，禦寒裝備同立山黑部，中午回溫再脫。',
+  url:'https://japanbusonline.com/zh-tw/DestinationSearch/1',ulabel:'巴士 訂票'},
  {n:9,date:'10/29',wd:3,r:'hida',stay:STAY.tak,
-  dest:{zh:'松本城',en:'Matsumoto Castle',ja:'松本城'},
-  trans:{zh:'上午：步行至國寶松本城。下午：13:05–15:38 巴士前往高山。',en:'AM: walk to Matsumoto Castle (National Treasure). PM: 13:05–15:38 bus to Takayama.',ja:'午前：国宝松本城まで徒歩。午後：13:05–15:38のバスで高山へ。'},
-  note:{zh:'9/28 23:00 訂巴士票。',en:'Book the bus 9/28 23:00.',ja:'9/28 23:00 バス予約。'},
+  dest:'松本城',
+  trans:'上午：步行至國寶松本城。下午：13:05–15:38 巴士前往高山。',
+  note:'9/28 23:00 訂巴士票。',
   url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',ulabel:L_HWB},
  {n:10,date:'10/30',wd:4,r:'hida',stay:STAY.tak,leaf:true,
-  dest:{zh:'合掌村・高山老街・宮川中橋',en:'Shirakawa-go, Takayama Old Town, Nakabashi',ja:'白川郷・高山古い町並・中橋'},
-  trans:{zh:'07:20 或 07:50 預約制濃飛巴士。先搭接駁車上展望台再回村內散步，13:30 或 14:00 返高山。下午逛高山老街、吃甜點。',en:'Reserved Nohi bus 07:20 or 07:50. Shuttle up to the viewpoint first, then stroll the village; back to Takayama 13:30 or 14:00. Afternoon in the old town with sweets.',ja:'07:20または07:50の予約制濃飛バス。まずシャトルで展望台へ、村内を散策、13:30か14:00で高山へ。午後は古い町並でスイーツ。'},
-  note:{zh:'9/29 23:00 訂票。回濃飛巴士總站領明天巴士票與纜車兌換券。',en:'Book 9/29 23:00. Back at Nohi Bus Center, pick up tomorrow\u2019s bus ticket and the ropeway voucher.',ja:'9/29 23:00 予約。濃飛バスセンターで明日のバス券とロープウェイ引換券を受取。'},
-  url:'https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421',ulabel:{zh:'濃飛巴士 訂票',en:'Book Nohi bus',ja:'濃飛バス予約'}},
+  dest:'合掌村・高山老街・宮川中橋',
+  trans:'07:20 或 07:50 預約制濃飛巴士。先搭接駁車上展望台再回村內散步，13:30 或 14:00 返高山。下午逛高山老街、吃甜點。',
+  note:'9/29 23:00 訂票。回濃飛巴士總站領明天巴士票與纜車兌換券。',
+  url:'https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421',ulabel:'濃飛巴士 訂票'},
  {n:11,date:'10/31',wd:5,r:'hida',stay:STAY.tak,leaf:true,
-  dest:{zh:'新穗高纜車',en:'Shinhotaka Ropeway',ja:'新穂高ロープウェイ'},
-  trans:{zh:'07:40 濃飛巴士直達新穗高（約 1.5 小時，無法預約需現場排隊）。憑兌換券換纜車票，搭雙層纜車至山頂展望台看北阿爾卑斯連峰。',en:'07:40 Nohi bus direct to Shinhotaka (~1.5 hr, no reservations — queue on site). Exchange voucher for ropeway tickets; ride the double-decker gondola to the summit deck for the Northern Alps.',ja:'07:40 濃飛バスで新穂高へ直行（約1.5時間、予約不可・現地で並ぶ）。引換券でロープウェイ券に交換、二階建てゴンドラで山頂展望台へ、北アルプスの大パノラマ。'},
-  note:{zh:'9/30 訂纜車套票。',en:'Book the ropeway set 9/30.',ja:'9/30 ロープウェイセット券予約。'},
-  url:'https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/',ulabel:{zh:'KLOOK 套票',en:'KLOOK set ticket',ja:'KLOOK セット券'}},
+  dest:'新穗高纜車',
+  trans:'07:40 濃飛巴士直達新穗高（約 1.5 小時，無法預約需現場排隊）。憑兌換券換纜車票，搭雙層纜車至山頂展望台看北阿爾卑斯連峰。',
+  note:'9/30 訂纜車套票。',
+  url:'https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/',ulabel:'KLOOK 套票'},
  {n:12,date:'11/01',wd:6,r:'persimmon',stay:STAY.nm,
-  dest:{zh:'宮川朝市・大須觀音・大須商店街',en:'Miyagawa Market, Osu Kannon, Osu Street',ja:'宮川朝市・大須観音・大須商店街'},
-  trans:{zh:'上午：宮川朝市。下午：JR 特急飛驒 10 號（ひだ10号 12:35–15:04）回名古屋。下午：大須觀音、大須商店街。',en:'AM: Miyagawa Morning Market. JR Ltd. Exp. Hida 10 (12:35–15:04) back to Nagoya. PM: Osu Kannon & Osu Shopping Street.',ja:'午前：宮川朝市。JR特急ひだ10号（12:35–15:04）で名古屋へ。午後：大須観音・大須商店街。'},
-  note:{zh:'9/30 23:00 訂票。',en:'Book 9/30 23:00.',ja:'9/30 23:00 予約。'},url:URL_E5489,ulabel:L_E5489},
+  dest:'宮川朝市・大須觀音・大須商店街',
+  trans:'上午：宮川朝市。下午：JR 特急飛驒 10 號（ひだ10号 12:35–15:04）回名古屋。下午：大須觀音、大須商店街。',
+  note:'9/30 23:00 訂票。',url:URL_E5489,ulabel:L_E5489},
  {n:13,date:'11/02',wd:0,r:'persimmon',stay:STAY.nm,
-  dest:{zh:'馬籠宿・妻籠宿',en:'Magome-juku & Tsumago-juku',ja:'馬籠宿・妻籠宿'},
-  trans:{zh:'08:20 名古屋站 VIP LINER 巴士站集合（一日遊）。',en:'08:20 meet at the VIP Liner stop, Nagoya Station (day tour).',ja:'08:20 名古屋駅 VIPライナー乗り場集合（日帰りツアー）。'},
-  note:{zh:'10/2 訂票。',en:'Book 10/2.',ja:'10/2 予約。'},
-  url:'https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/',ulabel:{zh:'KLOOK 訂票',en:'Book on KLOOK',ja:'KLOOK で予約'}},
+  dest:'馬籠宿・妻籠宿',
+  trans:'08:20 名古屋站 VIP LINER 巴士站集合（一日遊）。',
+  note:'10/2 訂票。',
+  url:'https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/',ulabel:'KLOOK 訂票'},
  {n:14,date:'11/03',wd:1,r:'persimmon',stay:STAY.nm,
-  dest:{zh:'名古屋城',en:'Nagoya Castle',ja:'名古屋城'},
-  trans:{zh:'上午：名古屋城。下午：大須觀音、大須商店街。',en:'AM: Nagoya Castle. PM: Osu Kannon & Osu Shopping Street.',ja:'午前：名古屋城。午後：大須観音・大須商店街。'}},
+  dest:'名古屋城',
+  trans:'上午：名古屋城。下午：大須觀音、大須商店街。'},
  {n:15,date:'11/04',wd:2,r:'home',stay:STAY.home,
-  dest:{zh:'返台',en:'Fly Home',ja:'帰国'},
-  trans:{zh:'上午：最後補貨。下午前往中部國際機場，搭國泰 CX531（16:40–19:15）回台灣。',en:'AM: last-minute shopping. PM: head to Chubu Centrair, Cathay CX531 (16:40–19:15) back to Taiwan.',ja:'午前：最後の買い物。午後、中部国際空港へ。キャセイ CX531（16:40–19:15）で台湾へ。'}}
+  dest:'返台',
+  trans:'上午：最後補貨。下午前往中部國際機場，搭國泰 CX531（16:40–19:15）回台灣。'}
 ];
 
 const TODOS=[
  {id:'tk',due:'2026-07-31',time:'09:00',url:'https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html',
-  title:{zh:'立山黑部 早鳥票（官網）',en:'Tateyama Kurobe early-bird (official)',ja:'立山黒部 早割（公式）'},
-  forDay:{zh:'10/26 立山黑部橫越',en:'10/26 Tateyama traverse',ja:'10/26 立山黒部横断'}},
+  title:'立山黑部 早鳥票（官網）',
+  forDay:'10/26 立山黑部橫越'},
  {id:'hida3',due:'2026-09-22',time:'23:00',url:URL_E5489,
-  title:{zh:'JR 特急飛驒 3 號（名古屋→富山）',en:'JR Ltd. Exp. Hida 3 (Nagoya→Toyama)',ja:'JR特急ひだ3号（名古屋→富山）'},
-  forDay:{zh:'10/23 富山',en:'10/23 Toyama',ja:'10/23 富山'}},
+  title:'JR 特急飛驒 3 號（名古屋→富山）',
+  forDay:'10/23 富山'},
  {id:'togakushi',due:'2026-09-26',time:'23:00',url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',
-  title:{zh:'戶隱・善光寺 高速巴士',en:'Togakushi & Zenkoji highway bus',ja:'戸隠・善光寺 高速バス'},
-  forDay:{zh:'10/27 戶隱奧社・善光寺',en:'10/27 Togakushi & Zenkoji',ja:'10/27 戸隠奥社・善光寺'}},
+  title:'戶隱・善光寺 高速巴士',
+  forDay:'10/27 戶隱奧社・善光寺'},
  {id:'kamikochi',due:'2026-09-27',time:'23:00',url:'https://japanbusonline.com/zh-tw/DestinationSearch/1',
-  title:{zh:'上高地 直達巴士',en:'Kamikochi direct bus',ja:'上高地 直行バス'},
-  forDay:{zh:'10/28 上高地',en:'10/28 Kamikochi',ja:'10/28 上高地'}},
+  title:'上高地 直達巴士',
+  forDay:'10/28 上高地'},
  {id:'mtTakayama',due:'2026-09-28',time:'23:00',url:'https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256',
-  title:{zh:'松本→高山 高速巴士',en:'Matsumoto→Takayama highway bus',ja:'松本→高山 高速バス'},
-  forDay:{zh:'10/29 松本城',en:'10/29 Matsumoto Castle',ja:'10/29 松本城'}},
+  title:'松本→高山 高速巴士',
+  forDay:'10/29 松本城'},
  {id:'shirakawa',due:'2026-09-29',time:'23:00',url:'https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421',
-  title:{zh:'合掌村 濃飛巴士（預約制）',en:'Shirakawa-go Nohi bus (reserved)',ja:'白川郷 濃飛バス（予約制）'},
-  forDay:{zh:'10/30 合掌村',en:'10/30 Shirakawa-go',ja:'10/30 白川郷'}},
+  title:'合掌村 濃飛巴士（預約制）',
+  forDay:'10/30 合掌村'},
  {id:'ropeway',due:'2026-09-30',time:'',url:'https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/',
-  title:{zh:'新穗高纜車套票',en:'Shinhotaka Ropeway set ticket',ja:'新穂高ロープウェイ セット券'},
-  forDay:{zh:'10/31 新穗高纜車',en:'10/31 Shinhotaka Ropeway',ja:'10/31 新穂高ロープウェイ'}},
+  title:'新穗高纜車套票',
+  forDay:'10/31 新穗高纜車'},
  {id:'hida10',due:'2026-09-30',time:'23:00',url:URL_E5489,
-  title:{zh:'JR 特急飛驒 10 號（高山→名古屋）',en:'JR Ltd. Exp. Hida 10 (Takayama→Nagoya)',ja:'JR特急ひだ10号（高山→名古屋）'},
-  forDay:{zh:'11/01 回名古屋',en:'11/01 back to Nagoya',ja:'11/01 名古屋へ'}},
+  title:'JR 特急飛驒 10 號（高山→名古屋）',
+  forDay:'11/01 回名古屋'},
  {id:'magome',due:'2026-10-02',time:'',url:'https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/',
-  title:{zh:'馬籠・妻籠 VIP LINER 一日遊',en:'Magome & Tsumago VIP Liner day tour',ja:'馬籠・妻籠 VIPライナー日帰り'},
-  forDay:{zh:'11/02 馬籠妻籠',en:'11/02 Magome & Tsumago',ja:'11/02 馬籠・妻籠'}}
+  title:'馬籠・妻籠 VIP LINER 一日遊',
+  forDay:'11/02 馬籠妻籠'}
 ];
 
 const CATS=[
- {id:'transport',color:'#5b7c91',name:{zh:'交通',en:'Transport',ja:'交通'}},
- {id:'lodging',color:'#7a6a9e',name:{zh:'住宿',en:'Lodging',ja:'宿泊'}},
- {id:'food',color:'#c2693a',name:{zh:'餐飲',en:'Food',ja:'飲食'}},
- {id:'ticket',color:'#5d7e57',name:{zh:'門票・活動',en:'Tickets & activities',ja:'入場・体験'}},
- {id:'shopping',color:'#b8472e',name:{zh:'購物',en:'Shopping',ja:'買い物'}},
- {id:'other',color:'#928a7d',name:{zh:'其他',en:'Other',ja:'その他'}}
+ {id:'transport',color:'#5b7c91',name:'交通'},
+ {id:'lodging',color:'#7a6a9e',name:'住宿'},
+ {id:'food',color:'#c2693a',name:'餐飲'},
+ {id:'ticket',color:'#5d7e57',name:'門票・活動'},
+ {id:'shopping',color:'#b8472e',name:'購物'},
+ {id:'other',color:'#928a7d',name:'其他'}
 ];
 const catById=id=>CATS.find(c=>c.id===id)||CATS[5];
 
 const SEED_TAG='transport';
 const TRANSPORT_EST=[
- {date:'2026-10-21',jpy:1340,note:{zh:'機場→名古屋 名鐵 μ-Sky',en:'Airport→Nagoya, Meitetsu μ-Sky',ja:'空港→名古屋 名鉄μ-SKY'}},
- {date:'2026-10-22',jpy:1260,note:{zh:'名古屋↔犬山 名鐵特急（來回）',en:'Nagoya↔Inuyama, Meitetsu Ltd. Exp. (round)',ja:'名古屋↔犬山 名鉄特急（往復）'}},
- {date:'2026-10-23',jpy:6140,note:{zh:'名古屋→富山 特急飛驒3號 指定席',en:'Nagoya→Toyama, Hida 3 reserved',ja:'名古屋→富山 ひだ3号 指定席'}},
- {date:'2026-10-24',jpy:1140,note:{zh:'富山↔雨晴海岸 愛之風＋冰見線',en:'Toyama↔Amaharashi, Ainokaze+Himi Line',ja:'富山↔雨晴海岸 あいの風＋氷見線'}},
- {date:'2026-10-25',jpy:4000,note:{zh:'富山↔金澤（來回）＋城下町周遊巴士',en:'Toyama↔Kanazawa (round) + Kenrokuen shuttle',ja:'富山↔金沢（往復）＋周遊バス'}},
- {date:'2026-10-26',jpy:1230,note:{zh:'電鐵富山→立山',en:'Dentetsu-Toyama→Tateyama',ja:'電鉄富山→立山'}},
- {date:'2026-10-26',jpy:13820,note:{zh:'立山→信濃大町 阿爾卑斯橫越',en:'Tateyama→Shinano-Omachi, Alpine traverse',ja:'立山→信濃大町 アルペン横断'}},
- {date:'2026-10-26',jpy:680,note:{zh:'信濃大町→松本',en:'Shinano-Omachi→Matsumoto',ja:'信濃大町→松本'}},
- {date:'2026-10-26',jpy:2500,note:{zh:'立山黑部 行李代運（每件）',en:'Tateyama Kurobe luggage forwarding (per bag)',ja:'立山黒部 手荷物輸送（1個）'}},
- {date:'2026-10-27',jpy:5200,note:{zh:'松本↔長野↔戶隱＋善光寺巴士',en:'Matsumoto↔Nagano↔Togakushi + Zenkoji bus',ja:'松本↔長野↔戸隠＋善光寺バス'}},
- {date:'2026-10-28',jpy:4550,note:{zh:'松本↔上高地 電鐵＋巴士（來回）',en:'Matsumoto↔Kamikochi, train+bus (round)',ja:'松本↔上高地 電車＋バス（往復）'}},
- {date:'2026-10-29',jpy:4400,note:{zh:'松本→高山 高速巴士',en:'Matsumoto→Takayama highway bus',ja:'松本→高山 高速バス'}},
- {date:'2026-10-30',jpy:4600,note:{zh:'高山↔合掌村 濃飛巴士（來回）',en:'Takayama↔Shirakawa-go, Nohi bus (round)',ja:'高山↔白川郷 濃飛バス（往復）'}},
- {date:'2026-10-31',jpy:7000,note:{zh:'新穗高 巴士＋纜車套票',en:'Shinhotaka bus + ropeway set',ja:'新穂高 バス＋ロープウェイ セット'}},
- {date:'2026-11-01',jpy:6140,note:{zh:'高山→名古屋 特急飛驒10號 指定席',en:'Takayama→Nagoya, Hida 10 reserved',ja:'高山→名古屋 ひだ10号 指定席'}},
- {date:'2026-11-02',jpy:8000,note:{zh:'馬籠妻籠 VIP LINER 一日遊（估）',en:'Magome-Tsumago VIP Liner day tour (est.)',ja:'馬籠妻籠 VIPライナー日帰り（概算）'}},
- {date:'2026-11-04',jpy:1340,note:{zh:'名古屋→機場 名鐵 μ-Sky',en:'Nagoya→Airport, Meitetsu μ-Sky',ja:'名古屋→空港 名鉄μ-SKY'}}
+ {date:'2026-10-21',jpy:1340,note:'機場→名古屋 名鐵 μ-Sky'},
+ {date:'2026-10-22',jpy:1260,note:'名古屋↔犬山 名鐵特急（來回）'},
+ {date:'2026-10-23',jpy:6140,note:'名古屋→富山 特急飛驒3號 指定席'},
+ {date:'2026-10-24',jpy:1140,note:'富山↔雨晴海岸 愛之風＋冰見線'},
+ {date:'2026-10-25',jpy:4000,note:'富山↔金澤（來回）＋城下町周遊巴士'},
+ {date:'2026-10-26',jpy:1230,note:'電鐵富山→立山'},
+ {date:'2026-10-26',jpy:13820,note:'立山→信濃大町 阿爾卑斯橫越'},
+ {date:'2026-10-26',jpy:680,note:'信濃大町→松本'},
+ {date:'2026-10-26',jpy:2500,note:'立山黑部 行李代運（每件）'},
+ {date:'2026-10-27',jpy:5200,note:'松本↔長野↔戶隱＋善光寺巴士'},
+ {date:'2026-10-28',jpy:4550,note:'松本↔上高地 電鐵＋巴士（來回）'},
+ {date:'2026-10-29',jpy:4400,note:'松本→高山 高速巴士'},
+ {date:'2026-10-30',jpy:4600,note:'高山↔合掌村 濃飛巴士（來回）'},
+ {date:'2026-10-31',jpy:7000,note:'新穗高 巴士＋纜車套票'},
+ {date:'2026-11-01',jpy:6140,note:'高山→名古屋 特急飛驒10號 指定席'},
+ {date:'2026-11-02',jpy:8000,note:'馬籠妻籠 VIP LINER 一日遊（估）'},
+ {date:'2026-11-04',jpy:1340,note:'名古屋→機場 名鐵 μ-Sky'}
 ];
 const SEED_TOTAL=TRANSPORT_EST.reduce((s,x)=>s+x.jpy,0);
 
@@ -670,17 +669,24 @@ function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 function fmt(n){return Math.round(n).toLocaleString('en-US');}
 
 /* ===== render: itinerary ===== */
-function wdFromDate(str){
+// 解析 MM/DD（也吃 10-21、10.21、10月21日 這些舊格式）。無法解析回傳 null。
+// 月日要能原樣還原才算數：'2026-10-21' 會從中間匹配成 26 月 10 日，Date 會滾成 2028-02-10
+// 而不是 Invalid Date，光靠 isNaN 擋不住，日期會被整串算歪。
+function parseMD(str){
  const m=String(str||'').match(/(\d{1,2})\D+(\d{1,2})/);
- if(!m)return 0;
- const d=new Date(2026,parseInt(m[1],10)-1,parseInt(m[2],10));
- if(isNaN(d))return 0;
- return (d.getDay()+6)%7; // Mon=0
+ if(!m)return null;
+ const mo=parseInt(m[1],10),da=parseInt(m[2],10);
+ const d=new Date(2026,mo-1,da);
+ return (d.getMonth()===mo-1&&d.getDate()===da)?d:null;
+}
+function wdFromDate(str){
+ const d=parseMD(str);
+ return d?(d.getDay()+6)%7:-1; // Mon=0，無法解析回 -1 讓呼叫端留白而非誤顯示成「一」
 }
 function renderTimeline(){
  document.getElementById('timeline').innerHTML=itinerary.map((d,i)=>{
   const col=REGION[d.r]||'var(--line)';
-  const wd=(typeof d.wd==='number')?d.wd:wdFromDate(d.date);
+  const wd=wdFromDate(d.date);
   const leaf=d.leaf?`<svg class="leaf-mark" style="color:var(--momiji)"><use href="#momiji"/></svg>`:'';
   const noteRow=d.note&&t(d.note)?`<div class="row note"><span class="lbl">✿</span><span>${esc(t(d.note))}</span></div>`:'';
   const link=d.url?`<a class="booklink" href="${esc(d.url)}" target="_blank" rel="noopener">🎫 ${esc(t(d.ulabel)||t(UI.bookGeneric))}</a>`:'';
@@ -695,7 +701,7 @@ function renderTimeline(){
   const stayHtml=stayUrl?`<a class="stay-link" href="${esc(stayUrl)}" target="_blank" rel="noopener">${stayTxt} ↗</a>`:stayTxt;
   return `<div class="day"><div class="node"><div class="num" style="background:${col}">${String(i+1).padStart(2,'0')}</div>${leaf}</div>
    <div class="card" style="border-left-color:${col}">
-    <div class="top"><span class="wd" style="background:${col}">${WD[LANG][wd]}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
+    <div class="top"><span class="wd" style="background:${col}">${WD[wd]||''}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
     <div class="row"><span class="lbl">${t(UI.rowTrans)}</span><span>${esc(t(d.trans))}</span></div>
     <div class="row"><span class="lbl">${t(UI.rowStay)}</span><span>${stayHtml}</span></div>
     ${noteRow}${link}${tools}
@@ -718,22 +724,47 @@ function toggleEdit(){
  if(dbRef&&!dataLoaded){alert('資料還在載入（或連線失敗），暫時不能編輯，以免覆蓋共用資料。');return;}
  editMode=!editMode;editingIndex=null;renderTimeline();
 }
+function resequenceDates(){
+ if(!itinerary.length)return;
+ const base=parseMD(itinerary[0].date);
+ if(!base){console.warn('第 1 天日期無法解析，日期自動接續已停用，請修正第 1 天的日期');return;}
+ itinerary.forEach((d,i)=>{
+  const cur=new Date(2026,base.getMonth(),base.getDate()+i);
+  d.date=String(cur.getMonth()+1).padStart(2,'0')+'/'+String(cur.getDate()).padStart(2,'0');
+  delete d.wd; // 星期一律由 date 推算，不留可能過時的存檔值
+ });
+}
 function moveDay(i,dir){
  const j=i+dir;if(j<0||j>=itinerary.length)return;
- const a=itinerary;[a[i],a[j]]=[a[j],a[i]];
+ // 交換的是內容，日期留在原本的位置上（第 1 天是錨點，尤其不能被換走）
+ const a=itinerary;const di=a[i].date,dj=a[j].date;[a[i],a[j]]=[a[j],a[i]];a[i].date=di;a[j].date=dj;
+ // 日期已經釘住不隨內容移動，這裡呼叫是順手把資料庫裡可能因舊版程式或其他 bug
+ // 而變得不連續的資料一併整理回連續狀態（自我修復，跟 delete d.wd 的收斂哲學一致）
+ resequenceDates();
  pushField('itinerary',itinerary);renderTimeline();
 }
 async function deleteDay(i){
  if(!confirm(t(UI.confirmDel)))return;
- itinerary.splice(i,1);await pushField('itinerary',itinerary);renderTimeline();
+ itinerary.splice(i,1);resequenceDates();await pushField('itinerary',itinerary);renderTimeline();
+}
+function isValidAnchorDate(s){
+ const m=String(s).trim().replace(/／/g,'/').match(/^(\d{1,2})\/(\d{1,2})$/);
+ if(!m)return false;
+ const d=new Date(2026,+m[1]-1,+m[2]);
+ return d.getMonth()===+m[1]-1&&d.getDate()===+m[2]; // 月日能原樣還原才算合法，擋掉 02/30 這種會靜默進位的值
 }
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;
  const d=editingIndex!=null?itinerary[editingIndex]:{r:'persimmon'};
  document.getElementById('m-title').textContent=editingIndex!=null?t(UI.mEditTitle):t(UI.mNewTitle);
- document.getElementById('m-date').value=d.date||'';
+ // 日期由第 1 天往後推算，只有錨點（第 1 天）可改；行程為空時新增的第一天也要能設錨點
+ const dateEl=document.getElementById('m-date');
+ const dateEditable=(editingIndex===0)||itinerary.length===0;
+ dateEl.value=d.date||'';
+ dateEl.readOnly=!dateEditable;
+ document.getElementById('m-date-hint').style.display=dateEditable?'none':'block';
  const rsel=document.getElementById('m-region');
- rsel.innerHTML=REGION_OPTS.map((o,k)=>`<option value="${o.key}">${UI.regions[LANG][k]}</option>`).join('');
+ rsel.innerHTML=REGION_OPTS.map((o,k)=>`<option value="${o.key}">${UI.regions[k]}</option>`).join('');
  rsel.value=d.r||'persimmon';
  document.getElementById('m-dest').value=t(d.dest);
  document.getElementById('m-trans').value=t(d.trans);
@@ -765,20 +796,23 @@ async function saveDayForm(){
  const v=id=>document.getElementById(id).value.trim();
  const dest=v('m-dest');
  if(!v('m-date')&&!dest){closeDayForm();return;}
+ // 日期欄位可輸入時（第 1 天）它決定整趟行程，空白或格式錯了會把全部日期算歪
+ const dateEl=document.getElementById('m-date');
+ if(!dateEl.readOnly&&!isValidAnchorDate(v('m-date'))){alert('日期請填 MM/DD，例如 10/21');return;}
  const day={date:v('m-date'),r:document.getElementById('m-region').value,
   dest:dest,trans:v('m-trans'),stay:v('m-stay'),stayUrl:v('m-stayurl'),note:v('m-note'),
   url:v('m-url'),ulabel:v('m-ulabel'),leaf:document.getElementById('m-leaf').checked};
- day.wd=wdFromDate(day.date);
  if(!day.note)delete day.note;
  if(!day.stayUrl)delete day.stayUrl;
  if(!day.url){delete day.url;delete day.ulabel;}
  if(editingIndex!=null)itinerary[editingIndex]=day; else itinerary.push(day);
+ resequenceDates();
  await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
 }
 async function delDayFromForm(){
  if(editingIndex==null)return;
  if(!confirm(t(UI.confirmDel)))return;
- itinerary.splice(editingIndex,1);await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
+ itinerary.splice(editingIndex,1);resequenceDates();await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
 }
 
 /* ===== expenses ===== */
@@ -916,20 +950,20 @@ function renderTodos(){
  }).join('');
 }
 
-/* ===== language ===== */
+/* ===== static text ===== */
 function applyStatic(){
- document.documentElement.lang=HTMLLANG[LANG];
+ document.documentElement.lang='zh-Hant';
  document.getElementById('eyebrow').textContent=t(UI.eyebrow);
  document.getElementById('title-a').textContent=t(UI.titleA);
  document.getElementById('title-b').textContent=t(UI.titleB);
- document.getElementById('route').innerHTML=UI.route[LANG].map((label,i)=>{
+ document.getElementById('route').innerHTML=UI.route.map((label,i)=>{
   const colors=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)','var(--persimmon)'];
   return `<span class="seg"><i class="dot" style="background:${colors[i]}"></i>${label}</span>`+(i<4?'<span class="arr">→</span>':'');
  }).join('');
  document.getElementById('tab-trip').textContent=t(UI.tabTrip);
  document.getElementById('tab-exp').textContent=t(UI.tabExp);
  document.getElementById('tab-todo').textContent=t(UI.tabTodo);
- const rk=UI.regionKey[LANG],rc=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)'];
+ const rk=UI.regionKey,rc=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)'];
  document.getElementById('region-key').innerHTML=rk.map((label,i)=> i<4?`<span><i style="background:${rc[i]}"></i>${label}</span>`:`<span><svg style="width:13px;height:13px;color:var(--momiji)"><use href="#momiji"/></svg>${label}</span>`).join('');
  document.getElementById('exp-cap').textContent=t(UI.expCap);
  document.getElementById('lbl-jpy').textContent=t(UI.lblJpy);
@@ -955,7 +989,6 @@ function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpens
 
 /* ===== init ===== */
 (function init(){
- LANG='zh';
  document.getElementById('e-date').value=new Date().toISOString().slice(0,10);
  document.getElementById('rate').addEventListener('input',async e=>{rate=parseFloat(e.target.value)||0;await pushField('settings',{rate});renderExpenses();updateSeed();});
  renderAll(); // 先畫出介面（資料稍後載入）

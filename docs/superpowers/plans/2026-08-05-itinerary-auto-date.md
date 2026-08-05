@@ -12,17 +12,19 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-05-itinerary-auto-date-design.md`
 
+**測試位置：** 本次產出的測試腳本已收進 repo 的 `tests/` 目錄，用 `sh tests/run-all.sh` 一次跑完。下方步驟裡的 `tests/xxx.js` 即為該目錄下的檔案。
+
 ---
 
 ### Task 1: `resequenceDates()` 核心邏輯
 
 **Files:**
 - Modify: `index.html`（在 `moveDay` 前面新增函式）
-- Test: `/private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js`
+- Test: `tests/test-resequence.js`
 
 - [ ] **Step 1: 寫失敗測試**
 
-建立 `/private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js`：
+建立 `tests/test-resequence.js`：
 
 ```js
 const fs = require('fs');
@@ -112,7 +114,7 @@ console.log(`\n${passed}/8 passed`);
 
 Run:
 ```bash
-node /private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js
+node tests/test-resequence.js
 ```
 Expected: `FAIL: 在 index.html 找不到 resequenceDates()`，exit code 1。
 
@@ -139,7 +141,7 @@ function resequenceDates(){
 
 Run:
 ```bash
-node /private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js
+node tests/test-resequence.js
 ```
 Expected: 8 個 `✓`、`8/8 passed`，exit code 0。
 
@@ -178,7 +180,7 @@ Run:
 ```bash
 cd /Users/raychang/tirp && grep -n "d\.wd\|day\.wd\|\.wd=" index.html
 ```
-Expected: 只剩 `saveDayForm()` 裡的 `day.wd=wdFromDate(day.date);` 一行（下一步移除）。`.card .wd{` 是 CSS class 名稱，不會被這個 pattern 命中。
+Expected: 兩行——`saveDayForm()` 裡的 `day.wd=wdFromDate(day.date);`（下一步移除），以及 `resequenceDates()` 裡的 `delete d.wd;`（Task 1 已加入，保留不動）。`.card .wd{` 是 CSS class 名稱，不會被這個 pattern 命中。
 
 - [ ] **Step 3: 移除 `saveDayForm()` 的 wd 寫入**
 
@@ -218,7 +220,7 @@ git commit -m "星期改為一律從日期推算，不再讀存檔的 wd"
 
 呼叫時機一律是：**修改完 `itinerary` 之後、`pushField` 之前。**
 
-- [ ] **Step 1: `moveDay`**
+- [ ] **Step 1: `moveDay`（交換內容，日期釘在位置上）**
 
 找到：
 
@@ -235,11 +237,24 @@ function moveDay(i,dir){
 ```js
 function moveDay(i,dir){
  const j=i+dir;if(j<0||j>=itinerary.length)return;
- const a=itinerary;[a[i],a[j]]=[a[j],a[i]];
+ // 交換的是內容，日期留在原本的位置上（第 1 天是錨點，尤其不能被換走）
+ const a=itinerary;const di=a[i].date,dj=a[j].date;[a[i],a[j]]=[a[j],a[i]];a[i].date=di;a[j].date=dj;
  resequenceDates();
  pushField('itinerary',itinerary);renderTimeline();
 }
 ```
+
+**為什麼不能只加 `resequenceDates()` 就好：**
+
+`moveDay` 對調的是整個「天」物件，`date` 會跟著內容走。第 1 天的 ↓ 按鈕**沒有**被 disabled（`index.html:689` 只在最後一天才 disable），所以 `moveDay(0,1)` 是使用者按得到的。一旦按下去，原本第 2 天的物件（帶著 `10/22`）會落到位置 0，`resequenceDates()` 就以 `10/22` 當錨點重算，整趟行程往後平移一天——而且重複按會持續累加：
+
+```
+10/21(A) 10/22(B) 10/23(C)
+按一次 → 10/22(B) 10/23(A) 10/24(C)
+按兩次 → 10/23(A) 10/24(B) 10/25(C)
+```
+
+先把兩個位置的日期保存下來、交換後再放回去，日期就完全不隨內容移動，錨點自然不會被換走。
 
 - [ ] **Step 2: `deleteDay`**
 
@@ -297,7 +312,88 @@ done
 ```
 Expected: 四行都是 `1`。
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: 加迴歸測試，鎖住第 1 天不被換走**
+
+建立 `tests/test-moveday.js`。這支測試從 `index.html` 原始碼把 `resequenceDates` 與 `moveDay` 兩個函式一起抽出來 eval，並把 `pushField` / `renderTimeline` 換成空殼，因此測到的是真正的 `moveDay`：
+
+```js
+const fs = require('fs');
+const assert = require('assert');
+
+const src = fs.readFileSync('/Users/raychang/tirp/index.html', 'utf8');
+const grab = (re, label) => {
+  const m = src.match(re);
+  if (!m) { console.error('FAIL: 找不到 ' + label); process.exit(1); }
+  return m[0];
+};
+const rdSrc = grab(/function resequenceDates\(\)\{[\s\S]*?\n\}/, 'resequenceDates()');
+const mdSrc = grab(/function moveDay\(i,dir\)\{[\s\S]*?\n\}/, 'moveDay()');
+
+let itinerary = [];
+function pushField() {}      // 測試用空殼，不碰 Firebase
+function renderTimeline() {} // 測試用空殼，不碰 DOM
+eval(rdSrc);
+eval(mdSrc);
+
+const mk = () => [
+  { date: '10/21', dest: 'A' }, { date: '10/22', dest: 'B' }, { date: '10/23', dest: 'C' },
+];
+const dates = () => itinerary.map(d => d.date);
+const dests = () => itinerary.map(d => d.dest);
+
+let passed = 0;
+function check(name, fn) {
+  try { fn(); console.log('  ✓ ' + name); passed++; }
+  catch (e) { console.log('  ✗ ' + name + '\n    ' + e.message); process.exitCode = 1; }
+}
+
+check('第 1 天往下移，日期不動只有內容互換', () => {
+  itinerary = mk();
+  moveDay(0, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['B', 'A', 'C']);
+});
+
+check('第 1 天連按兩次會回到原狀，日期不累加平移', () => {
+  itinerary = mk();
+  moveDay(0, 1);
+  moveDay(0, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'B', 'C']);
+});
+
+check('中間往下移，日期釘在位置上', () => {
+  itinerary = mk();
+  moveDay(1, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'C', 'B']);
+});
+
+check('往上移與往下移對稱', () => {
+  itinerary = mk();
+  moveDay(2, -1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'C', 'B']);
+});
+
+check('超出範圍不做事', () => {
+  itinerary = mk();
+  moveDay(0, -1);
+  moveDay(2, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'B', 'C']);
+});
+
+console.log(`\n${passed}/5 passed`);
+```
+
+Run:
+```bash
+node tests/test-moveday.js && node tests/test-resequence.js
+```
+Expected: `5/5 passed` 與 `8/8 passed`，兩支都是 exit code 0。
+
+- [ ] **Step 7: Commit**
 
 ```bash
 cd /Users/raychang/tirp
@@ -361,13 +457,64 @@ git commit -m "移動、刪除、儲存行程後自動重算日期"
  document.getElementById('m-date-hint').style.display=dateEditable?'none':'block';
 ```
 
+- [ ] **Step 3b: 加上日期格式驗證**
+
+日期欄位可輸入時（第 1 天／行程為空），它決定整趟 15 天的日期。`resequenceDates()` 用的 regex 是 `/(\d{1,2})\D+(\d{1,2})/`，很寬鬆：輸入 `2026-10-21` 會被解析成「26 月 10 日」，錨點變成 `02/10`，整趟行程改寫到二月並寫回 Firebase。雖然重新輸入正確日期就能救回來（內容不會遺失），但要擋在前面。
+
+在 `saveDayForm()` 中找到：
+
+```js
+ const day={date:v('m-date'),r:document.getElementById('m-region').value,
+```
+
+在這一行**之前**插入：
+
+```js
+ // 日期欄位可輸入時（第 1 天）它決定整趟行程，空白或格式錯了會把全部日期算歪
+ const dateEl=document.getElementById('m-date');
+ if(!dateEl.readOnly){
+  const md=v('m-date').match(/^(\d{1,2})\/(\d{1,2})$/);
+  if(!md||+md[1]<1||+md[1]>12||+md[2]<1||+md[2]>31){alert('日期請填 MM/DD，例如 10/21');return;}
+ }
+```
+
+**注意條件不能寫成 `if(!dateEl.readOnly&&v('m-date'))`。** 空白日期正是最危險的輸入：使用者把第 1 天的日期清空後儲存，`resequenceDates()` 會因為錨點解析失敗而直接 return（什麼都不做），但 `pushField` 照樣把 `date` 為空的資料寫回 Firebase。從那一刻起，之後每一次移動／刪除／儲存都會靜默地不再重算日期，直到有人手動把第 1 天的日期補回來為止——而且全程沒有任何錯誤提示。日期欄位可輸入時，就是必填。
+
+（前面既有的 `if(!v('m-date')&&!dest){closeDayForm();return;}` 只在日期與目的地**都**空白時才靜默關閉，是「開了新增視窗但什麼都沒填」的情境，不會蓋過這個驗證。）
+
+（`alert()` 是這個檔案既有的錯誤提示方式，見 `toggleEdit()`。）
+
+- [ ] **Step 3c: 驗證格式檢查有效**
+
+建立 `tests/test-datevalidate.js`，直接測那段驗證條件的邏輯：
+
+```js
+const assert = require('assert');
+const ok = s => {
+  const md = String(s).match(/^(\d{1,2})\/(\d{1,2})$/);
+  return !(!md || +md[1] < 1 || +md[1] > 12 || +md[2] < 1 || +md[2] > 31);
+};
+const accept = ['10/21', '1/1', '09/08', '12/31'];
+// 空字串一定要在擋下之列——清空第 1 天日期是最危險的輸入
+const reject = ['', '2026-10-21', '2026/10/21', '10-21', '13/45', '0/5', '10/0', '10/32', 'abc', '10/21 '];
+accept.forEach(s => assert.ok(ok(s), '應接受但被擋下: ' + JSON.stringify(s)));
+reject.forEach(s => assert.ok(!ok(s), '應擋下但被接受: ' + JSON.stringify(s)));
+console.log(`✓ 接受 ${accept.length} 種合法格式，擋下 ${reject.length} 種不合法格式`);
+```
+
+Run:
+```bash
+node tests/test-datevalidate.js
+```
+Expected: `✓ 接受 4 種合法格式，擋下 10 種不合法格式`，exit code 0。
+
 - [ ] **Step 4: 靜態檢查**
 
 Run:
 ```bash
-cd /Users/raychang/tirp && grep -n "m-date-hint\|dateEditable\|input\[readonly\]" index.html
+cd /Users/raychang/tirp && grep -n "m-date-hint\|dateEditable\|dateEl\|input\[readonly\]" index.html
 ```
-Expected: 6 行——HTML 的 `m-date-hint` 1 行、CSS 的 `input[readonly]` 2 行、JS 的 `dateEditable` 宣告 1 行與 `dateEl.readOnly=!dateEditable;` 1 行、`m-date-hint` 的 display 設定 1 行。
+Expected: 10 行——HTML 的 `m-date-hint` 1 行；CSS 的 `input[readonly]` 2 行；`openDayForm()` 裡 5 行（`dateEl` 宣告、`dateEditable` 宣告、`dateEl.value`、`dateEl.readOnly`、`m-date-hint` 的 display 設定）；`saveDayForm()` 裡 2 行（`dateEl` 宣告、`if(!dateEl.readOnly&&…)`）。
 
 - [ ] **Step 5: Commit**
 
@@ -379,9 +526,20 @@ git commit -m "編輯視窗日期欄位改唯讀，只有第 1 天可調整"
 
 ---
 
-### Task 5: 瀏覽器驗證
+### Task 5: 驗證
 
 **Files:** 無（純驗證）
+
+> **執行時的實際情況（2026-08-05）：** Chrome 擴充功能未連線，無法做瀏覽器自動化。改為兩件事取代：
+>
+> 1. **Node DOM harness**（`tests/test-dayform.js`）：用最小 DOM stub 跑從原始碼抽出來的真正 `openDayForm` / `saveDayForm`，涵蓋唯讀狀態的四種情境、狀態重設、第 1 天平移、非法日期、空白日期、全形斜線、中間天編輯、新增一天、寫回內容不含 `wd`，共 12 項全綠。
+> 2. **端對端腳本**：用真實的 `DEFAULT_DAYS` 15 天資料跑 `moveDay`，確認日期釘位、星期同步、第 1 天 ↓ 不會讓末日從 11/04 跑掉。
+>
+> 累計自動化測試 43 項（12 + 17 + 6 + 8）全綠。
+>
+> **仍待人工確認的項目**（自動化測不到）：唯讀欄位的灰底樣式與提示文字排版、手機上點唯讀欄位是否會叫出虛擬鍵盤、以及與正式 Firebase 的實際往返。下方步驟保留給人工執行。
+>
+> 為避免動到共用的真實行程，驗證用的是 scratchpad 裡不含 `config.js` 的沙盒副本（走本機模式，資料存 localStorage）。
 
 - [ ] **Step 1: 啟動本機伺服器**
 
@@ -405,6 +563,15 @@ Expected:
 - 第 3 格日期仍是 `10/23`、星期仍是「五」，內容變成原本的「立山町・稱名瀑布」
 - 第 4 格日期仍是 `10/24`、星期仍是「六」，內容變成「雨晴海岸」
 - 按 ↑ 移回來後完全還原
+
+- [ ] **Step 3b: 驗證第 1 天往下移不會平移整趟**
+
+把第 1 天（10/21）按 ↓。
+
+Expected:
+- 第 1 格日期仍是 `10/21`、第 2 格仍是 `10/22`，只有內容互換
+- **整趟結束日仍是 `11/04`**（若變成 `11/05` 代表錨點被換走了）
+- 再按一次 ↓ 移回來，完全還原
 
 - [ ] **Step 4: 驗證刪除**
 
