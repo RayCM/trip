@@ -718,6 +718,18 @@ function toggleEdit(){
  if(dbRef&&!dataLoaded){alert('資料還在載入（或連線失敗），暫時不能編輯，以免覆蓋共用資料。');return;}
  editMode=!editMode;editingIndex=null;renderTimeline();
 }
+function resequenceDates(){
+ if(!itinerary.length)return;
+ const m=String(itinerary[0].date||'').match(/(\d{1,2})\D+(\d{1,2})/);
+ if(!m)return;
+ const base=new Date(2026,parseInt(m[1],10)-1,parseInt(m[2],10));
+ if(isNaN(base))return;
+ itinerary.forEach((d,i)=>{
+  const cur=new Date(2026,base.getMonth(),base.getDate()+i);
+  d.date=String(cur.getMonth()+1).padStart(2,'0')+'/'+String(cur.getDate()).padStart(2,'0');
+  delete d.wd; // 星期一律由 date 推算，不留可能過時的存檔值
+ });
+}
 function moveDay(i,dir){
  const j=i+dir;if(j<0||j>=itinerary.length)return;
  const a=itinerary;[a[i],a[j]]=[a[j],a[i]];
