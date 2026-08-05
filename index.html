@@ -422,7 +422,7 @@ function applySnapshot(d){
 }
 function clone(x){return JSON.parse(JSON.stringify(x));}
 
-/* ===== i18n ===== */
+/* ===== text & labels ===== */
 // Firebase 上的舊資料仍是 {zh,en,ja} 物件，因此保留讀 o.zh 的能力
 const t=o=>o==null?'':(typeof o==='string'?o:(o.zh||''));
 const WD=['一','二','三','四','五','六','日'];
