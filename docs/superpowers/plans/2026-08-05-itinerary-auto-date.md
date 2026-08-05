@@ -470,13 +470,17 @@ git commit -m "移動、刪除、儲存行程後自動重算日期"
 在這一行**之前**插入：
 
 ```js
- // 日期欄位可輸入時（第 1 天）它決定整趟行程，格式錯了會把全部日期算歪
+ // 日期欄位可輸入時（第 1 天）它決定整趟行程，空白或格式錯了會把全部日期算歪
  const dateEl=document.getElementById('m-date');
- if(!dateEl.readOnly&&v('m-date')){
+ if(!dateEl.readOnly){
   const md=v('m-date').match(/^(\d{1,2})\/(\d{1,2})$/);
   if(!md||+md[1]<1||+md[1]>12||+md[2]<1||+md[2]>31){alert('日期請填 MM/DD，例如 10/21');return;}
  }
 ```
+
+**注意條件不能寫成 `if(!dateEl.readOnly&&v('m-date'))`。** 空白日期正是最危險的輸入：使用者把第 1 天的日期清空後儲存，`resequenceDates()` 會因為錨點解析失敗而直接 return（什麼都不做），但 `pushField` 照樣把 `date` 為空的資料寫回 Firebase。從那一刻起，之後每一次移動／刪除／儲存都會靜默地不再重算日期，直到有人手動把第 1 天的日期補回來為止——而且全程沒有任何錯誤提示。日期欄位可輸入時，就是必填。
+
+（前面既有的 `if(!v('m-date')&&!dest){closeDayForm();return;}` 只在日期與目的地**都**空白時才靜默關閉，是「開了新增視窗但什麼都沒填」的情境，不會蓋過這個驗證。）
 
 （`alert()` 是這個檔案既有的錯誤提示方式，見 `toggleEdit()`。）
 
@@ -491,7 +495,8 @@ const ok = s => {
   return !(!md || +md[1] < 1 || +md[1] > 12 || +md[2] < 1 || +md[2] > 31);
 };
 const accept = ['10/21', '1/1', '09/08', '12/31'];
-const reject = ['2026-10-21', '2026/10/21', '10-21', '13/45', '0/5', '10/0', '10/32', 'abc', '10/21 ', ''];
+// 空字串一定要在擋下之列——清空第 1 天日期是最危險的輸入
+const reject = ['', '2026-10-21', '2026/10/21', '10-21', '13/45', '0/5', '10/0', '10/32', 'abc', '10/21 '];
 accept.forEach(s => assert.ok(ok(s), '應接受但被擋下: ' + JSON.stringify(s)));
 reject.forEach(s => assert.ok(!ok(s), '應擋下但被接受: ' + JSON.stringify(s)));
 console.log(`✓ 接受 ${accept.length} 種合法格式，擋下 ${reject.length} 種不合法格式`);
