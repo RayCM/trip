@@ -27,13 +27,25 @@
 | 位置 | 結構 |
 |---|---|
 | `index.html:428` `UI` | 大量 `{zh,en,ja}` 項目 |
-| `index.html:515` `STAY` | 住宿名稱 |
-| `index.html:534` `DEFAULT_DAYS` | 每天的 `dest` / `trans` / `note` |
-| `index.html:600` `TODOS` | 待辦項目文字 |
-| `index.html:630` `CATS` | 記帳分類名稱 |
-| `index.html:641` `TRANSPORT_EST` | 交通預估的 `note` |
+| `index.html:524-525` `L_E5489` / `L_HWB` | 訂票連結標籤 |
+| `index.html:534` `DEFAULT_DAYS` | 每天的 `dest` / `trans` / `note` / `ulabel` |
+| `index.html:600` `TODOS` | 每項的 `title` / `forDay` |
+| `index.html:630` `CATS` | 每項的 `name` |
+| `index.html:641` `TRANSPORT_EST` | 每項的 `note` |
 
 呼叫端多數透過 `t()` 取值，`t()` 本來就接受純字串，因此不需要改動。
+
+**唯一例外：`STAY`（`index.html:515-522`）不可壓平成字串。**
+
+`STAY` 的每個住宿是 `{zh,en,ja,url}`——`url` 與語系鍵在**同一個物件裡**：
+
+```js
+ ngo:{zh:'名古屋花園皇宮飯店',en:'Nagoya Garden Palace Hotel',ja:'名古屋ガーデンパレス',url:'https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA'},
+```
+
+壓平成字串會弄丟住宿的 Google Maps 連結（`renderTimeline()` 讀的是 `d.stay.url`）。`STAY` 只刪 `en` / `ja`，保留 `{zh, url}` 形狀；沒有 url 的 `home` 則保留 `{zh}`。
+
+這是全檔唯一一處語系鍵與其他鍵混在同一物件的結構，已逐行確認。`CATS` 的 `name`、`TODOS` 的 `title`、`DEFAULT_DAYS` 的 `note` / `ulabel` 雖然與 `id` / `color` / `url` 寫在同一行，但語系物件本身是獨立的巢狀物件，可正常壓平。
 
 ### 2. 改掉 `[LANG]` 索引
 
