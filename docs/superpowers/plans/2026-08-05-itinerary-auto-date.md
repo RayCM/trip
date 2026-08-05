@@ -12,6 +12,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-05-itinerary-auto-date-design.md`
 
+**路徑簡寫：** 以下 `$SP` 代表 `/private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad`
+
 ---
 
 ### Task 1: `resequenceDates()` 核心邏輯
@@ -218,7 +220,7 @@ git commit -m "星期改為一律從日期推算，不再讀存檔的 wd"
 
 呼叫時機一律是：**修改完 `itinerary` 之後、`pushField` 之前。**
 
-- [ ] **Step 1: `moveDay`**
+- [ ] **Step 1: `moveDay`（交換內容，日期釘在位置上）**
 
 找到：
 
@@ -235,11 +237,24 @@ function moveDay(i,dir){
 ```js
 function moveDay(i,dir){
  const j=i+dir;if(j<0||j>=itinerary.length)return;
- const a=itinerary;[a[i],a[j]]=[a[j],a[i]];
+ // 交換的是內容，日期留在原本的位置上（第 1 天是錨點，尤其不能被換走）
+ const a=itinerary;const di=a[i].date,dj=a[j].date;[a[i],a[j]]=[a[j],a[i]];a[i].date=di;a[j].date=dj;
  resequenceDates();
  pushField('itinerary',itinerary);renderTimeline();
 }
 ```
+
+**為什麼不能只加 `resequenceDates()` 就好：**
+
+`moveDay` 對調的是整個「天」物件，`date` 會跟著內容走。第 1 天的 ↓ 按鈕**沒有**被 disabled（`index.html:689` 只在最後一天才 disable），所以 `moveDay(0,1)` 是使用者按得到的。一旦按下去，原本第 2 天的物件（帶著 `10/22`）會落到位置 0，`resequenceDates()` 就以 `10/22` 當錨點重算，整趟行程往後平移一天——而且重複按會持續累加：
+
+```
+10/21(A) 10/22(B) 10/23(C)
+按一次 → 10/22(B) 10/23(A) 10/24(C)
+按兩次 → 10/23(A) 10/24(B) 10/25(C)
+```
+
+先把兩個位置的日期保存下來、交換後再放回去，日期就完全不隨內容移動，錨點自然不會被換走。
 
 - [ ] **Step 2: `deleteDay`**
 
@@ -297,7 +312,88 @@ done
 ```
 Expected: 四行都是 `1`。
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: 加迴歸測試，鎖住第 1 天不被換走**
+
+建立 `$SP/test-moveday.js`。這支測試從 `index.html` 原始碼把 `resequenceDates` 與 `moveDay` 兩個函式一起抽出來 eval，並把 `pushField` / `renderTimeline` 換成空殼，因此測到的是真正的 `moveDay`：
+
+```js
+const fs = require('fs');
+const assert = require('assert');
+
+const src = fs.readFileSync('/Users/raychang/tirp/index.html', 'utf8');
+const grab = (re, label) => {
+  const m = src.match(re);
+  if (!m) { console.error('FAIL: 找不到 ' + label); process.exit(1); }
+  return m[0];
+};
+const rdSrc = grab(/function resequenceDates\(\)\{[\s\S]*?\n\}/, 'resequenceDates()');
+const mdSrc = grab(/function moveDay\(i,dir\)\{[\s\S]*?\n\}/, 'moveDay()');
+
+let itinerary = [];
+function pushField() {}      // 測試用空殼，不碰 Firebase
+function renderTimeline() {} // 測試用空殼，不碰 DOM
+eval(rdSrc);
+eval(mdSrc);
+
+const mk = () => [
+  { date: '10/21', dest: 'A' }, { date: '10/22', dest: 'B' }, { date: '10/23', dest: 'C' },
+];
+const dates = () => itinerary.map(d => d.date);
+const dests = () => itinerary.map(d => d.dest);
+
+let passed = 0;
+function check(name, fn) {
+  try { fn(); console.log('  ✓ ' + name); passed++; }
+  catch (e) { console.log('  ✗ ' + name + '\n    ' + e.message); process.exitCode = 1; }
+}
+
+check('第 1 天往下移，日期不動只有內容互換', () => {
+  itinerary = mk();
+  moveDay(0, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['B', 'A', 'C']);
+});
+
+check('第 1 天連按兩次會回到原狀，日期不累加平移', () => {
+  itinerary = mk();
+  moveDay(0, 1);
+  moveDay(0, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'B', 'C']);
+});
+
+check('中間往下移，日期釘在位置上', () => {
+  itinerary = mk();
+  moveDay(1, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'C', 'B']);
+});
+
+check('往上移與往下移對稱', () => {
+  itinerary = mk();
+  moveDay(2, -1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'C', 'B']);
+});
+
+check('超出範圍不做事', () => {
+  itinerary = mk();
+  moveDay(0, -1);
+  moveDay(2, 1);
+  assert.deepStrictEqual(dates(), ['10/21', '10/22', '10/23']);
+  assert.deepStrictEqual(dests(), ['A', 'B', 'C']);
+});
+
+console.log(`\n${passed}/5 passed`);
+```
+
+Run:
+```bash
+node $SP/test-moveday.js && node $SP/test-resequence.js
+```
+Expected: `5/5 passed` 與 `8/8 passed`，兩支都是 exit code 0。
+
+- [ ] **Step 7: Commit**
 
 ```bash
 cd /Users/raychang/tirp
@@ -405,6 +501,15 @@ Expected:
 - 第 3 格日期仍是 `10/23`、星期仍是「五」，內容變成原本的「立山町・稱名瀑布」
 - 第 4 格日期仍是 `10/24`、星期仍是「六」，內容變成「雨晴海岸」
 - 按 ↑ 移回來後完全還原
+
+- [ ] **Step 3b: 驗證第 1 天往下移不會平移整趟**
+
+把第 1 天（10/21）按 ↓。
+
+Expected:
+- 第 1 格日期仍是 `10/21`、第 2 格仍是 `10/22`，只有內容互換
+- **整趟結束日仍是 `11/04`**（若變成 `11/05` 代表錨點被換走了）
+- 再按一次 ↓ 移回來，完全還原
 
 - [ ] **Step 4: 驗證刪除**
 
