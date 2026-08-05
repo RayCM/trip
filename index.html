@@ -680,7 +680,7 @@ function wdFromDate(str){
 function renderTimeline(){
  document.getElementById('timeline').innerHTML=itinerary.map((d,i)=>{
   const col=REGION[d.r]||'var(--line)';
-  const wd=(typeof d.wd==='number')?d.wd:wdFromDate(d.date);
+  const wd=wdFromDate(d.date);
   const leaf=d.leaf?`<svg class="leaf-mark" style="color:var(--momiji)"><use href="#momiji"/></svg>`:'';
   const noteRow=d.note&&t(d.note)?`<div class="row note"><span class="lbl">✿</span><span>${esc(t(d.note))}</span></div>`:'';
   const link=d.url?`<a class="booklink" href="${esc(d.url)}" target="_blank" rel="noopener">🎫 ${esc(t(d.ulabel)||t(UI.bookGeneric))}</a>`:'';
@@ -780,7 +780,6 @@ async function saveDayForm(){
  const day={date:v('m-date'),r:document.getElementById('m-region').value,
   dest:dest,trans:v('m-trans'),stay:v('m-stay'),stayUrl:v('m-stayurl'),note:v('m-note'),
   url:v('m-url'),ulabel:v('m-ulabel'),leaf:document.getElementById('m-leaf').checked};
- day.wd=wdFromDate(day.date);
  if(!day.note)delete day.note;
  if(!day.stayUrl)delete day.stayUrl;
  if(!day.url){delete day.url;delete day.ulabel;}
