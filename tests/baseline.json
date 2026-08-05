@@ -1,0 +1,506 @@
+{
+ "WD": [
+  "一",
+  "二",
+  "三",
+  "四",
+  "五",
+  "六",
+  "日"
+ ],
+ "UI_regions": [
+  "名古屋",
+  "北陸",
+  "信州",
+  "飛驒",
+  "其他"
+ ],
+ "UI_route": [
+  "名古屋",
+  "北陸",
+  "信州",
+  "飛驒",
+  "名古屋"
+ ],
+ "UI_regionKey": [
+  "名古屋",
+  "北陸（富山）",
+  "信州（松本）",
+  "飛驒（高山）",
+  "紅葉重點"
+ ],
+ "UI": {
+  "addDay": "＋ 新增一天",
+  "addEntry": "＋ 新增一筆",
+  "addMemberPh": "輸入名字後按 ＋",
+  "allEven": "目前剛好結清，不用互轉 🎉",
+  "bookGeneric": "訂票連結",
+  "bookNow": "前往訂票 ↗",
+  "cancel": "取消",
+  "confirmDel": "確定刪除這天行程？",
+  "curJpy": "¥ 日圓",
+  "curTwd": "NT$ 台幣",
+  "del": "刪除",
+  "delDay": "刪除這天",
+  "editOff": "完成",
+  "editOn": "編輯行程",
+  "emptyExp": "還沒有任何花費，點上面新增第一筆吧。",
+  "estTag": "估算",
+  "evenWord": "結清",
+  "expCap": "總支出（估算）",
+  "eyebrow": "2026 ‧ 紅葉之旅",
+  "fAmount": "金額",
+  "fCat": "分類",
+  "fCur": "幣別",
+  "fDate": "日期",
+  "fDate2": "日期（例 10/26）",
+  "fDest": "目的地",
+  "fLeaf": "標為紅葉重點",
+  "fNote": "說明（選填）",
+  "fNote2": "備註（選填）",
+  "fRegion": "區域",
+  "fStay2": "住宿",
+  "fStayUrl": "住宿網址（選填）",
+  "fTrans2": "交通與行程",
+  "fUlabel": "按鈕文字（選填）",
+  "fUrl": "訂票網址（選填）",
+  "footer": "資料會自動儲存於此裝置 ‧ 建議「加入主畫面」當作行動小幫手",
+  "forPre": "用於",
+  "getsWord": "應收",
+  "lblJpy": "日圓",
+  "lblTwd": "台幣",
+  "mEditTitle": "編輯行程",
+  "mNewTitle": "新增行程",
+  "membersLabel": "同行成員",
+  "needPayers": "在各筆花費指定「誰付的」，這裡就會自動算出怎麼分。",
+  "noMembers": "先在下方新增同行成員，就能自動分帳。",
+  "notePh": "例：富山地鐵飯店、近江町市場午餐…",
+  "opens": "開賣",
+  "owesWord": "應付",
+  "paidBy": "誰付的",
+  "paidByNone": "—　未指定",
+  "paidWord": "已付",
+  "perEach": "每人均攤",
+  "planTtl": "怎麼還",
+  "ratePost": "（可改）",
+  "ratePre": "匯率　¥1 ≈ NT$",
+  "rowStay": "住宿",
+  "rowTrans": "交通",
+  "save": "儲存",
+  "seedAdd": "填入交通預估",
+  "seedAdded": "已填入 ✓",
+  "seedRm": "移除",
+  "seedTtl": "🚃 交通預估（每人）",
+  "settleTtl": "結算分帳",
+  "tabExp": "記帳",
+  "tabTodo": "訂票",
+  "tabTrip": "行程",
+  "titleA": "日本中部",
+  "titleB": "15 日自由行",
+  "todoH3": "訂票待辦",
+  "todoP": "按開賣日排序，記得開賣當天準時搶票"
+ },
+ "L_E5489": "JR e5489 訂票",
+ "L_HWB": "高速巴士 訂票",
+ "STAY": {
+  "home": {
+   "name": "溫暖的家 ♡",
+   "url": ""
+  },
+  "mat": {
+   "name": "東橫 INN 松本站東口",
+   "url": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
+  },
+  "ngo": {
+   "name": "名古屋花園皇宮飯店",
+   "url": "https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA"
+  },
+  "nm": {
+   "name": "東橫 INN 名古屋丸之內",
+   "url": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
+  },
+  "tak": {
+   "name": "Tabino Hotel Satellite（高山）",
+   "url": "https://maps.app.goo.gl/bDSbYodPWsvwXU3R9"
+  },
+  "toy": {
+   "name": "富山地鐵飯店",
+   "url": "https://maps.app.goo.gl/VprwdcATF86Ttm9YA"
+  }
+ },
+ "DEFAULT_DAYS": [
+  {
+   "date": "10/21",
+   "r": "persimmon",
+   "leaf": false,
+   "dest": "名古屋",
+   "trans": "國泰 CX530（11:30–15:30）抵中部機場。名鐵特急 μ-Sky 往金山站（24 分），轉名城線至榮站。",
+   "note": "",
+   "url": "",
+   "ulabel": "",
+   "stay": "名古屋花園皇宮飯店",
+   "stayUrl": "https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA"
+  },
+  {
+   "date": "10/22",
+   "r": "persimmon",
+   "leaf": false,
+   "dest": "犬山城・熱田神宮",
+   "trans": "上午：名鐵名古屋站搭特急至犬山站（25 分），步行至犬山城下町。下午：熱田神宮。",
+   "note": "",
+   "url": "",
+   "ulabel": "",
+   "stay": "名古屋花園皇宮飯店",
+   "stayUrl": "https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA"
+  },
+  {
+   "date": "10/23",
+   "r": "slate",
+   "leaf": false,
+   "dest": "富山",
+   "trans": "上午：JR 特急飛驒 3 號（ひだ3号 08:43–12:32）到富山。下午：富岩運河環水公園。",
+   "note": "9/22 23:00 開放訂票",
+   "url": "https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc",
+   "ulabel": "JR e5489 訂票",
+   "stay": "富山地鐵飯店",
+   "stayUrl": "https://maps.app.goo.gl/VprwdcATF86Ttm9YA"
+  },
+  {
+   "date": "10/24",
+   "r": "slate",
+   "leaf": false,
+   "dest": "雨晴海岸",
+   "trans": "行李寄放富山站。搭「愛之風富山鐵道」至高岡，轉 11:16 JR 冰見線到雨晴站。傍晚：富山市區。",
+   "note": "冰見線約一小時一班，務必查好回程；全程可用 IC 卡，高岡轉車不出站。雲層太厚可與 10/25 對調。",
+   "url": "",
+   "ulabel": "",
+   "stay": "富山地鐵飯店",
+   "stayUrl": "https://maps.app.goo.gl/VprwdcATF86Ttm9YA"
+  },
+  {
+   "date": "10/25",
+   "r": "slate",
+   "leaf": false,
+   "dest": "金澤・兼六園・近江町市場・東茶屋街",
+   "trans": "金澤站 7 號乘車處搭「城下町金澤周遊巴士（右迴）」至兼六園下・金澤城。午餐近江町市場海鮮，下午東茶屋街金箔冰淇淋，傍晚回富山。",
+   "note": "回富山後到電鐵富山站售票機，用 QR Code 領取立山黑部車票。",
+   "url": "",
+   "ulabel": "",
+   "stay": "富山地鐵飯店",
+   "stayUrl": "https://maps.app.goo.gl/VprwdcATF86Ttm9YA"
+  },
+  {
+   "date": "10/26",
+   "r": "cedar",
+   "leaf": true,
+   "dest": "立山黑部（橫越）",
+   "trans": "05:00 富山站寄行李。步行至電鐵富山站搭 05:50 富山地鐵至立山站（07:01 到），經纜車・高原巴士・無軌電車共 6 種交通工具橫越，傍晚抵信濃大町轉巴士往松本。",
+   "note": "7/31 09:00 官網搶早鳥票。行李代運：富山寄、信濃大町取（最早 05:00、限當天件）。隨身小背包裝貴重物，洋蔥式穿法＋墨鏡防雪盲。",
+   "url": "https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html",
+   "ulabel": "立山黑部 官網",
+   "stay": "東橫 INN 松本站東口",
+   "stayUrl": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
+  },
+  {
+   "date": "10/27",
+   "r": "cedar",
+   "leaf": false,
+   "dest": "戶隱神社奧社・善光寺",
+   "trans": "上午：JR（07:30→08:45）至長野站，7 號巴士站搭 09:20 巴士往戶隱奧社入口。下午：13:34 巴士回長野，1 號站搭公車到善光寺大門，傍晚回松本。",
+   "note": "9/26 23:00 訂票。長野善光寺出口 7 號站轉 70 號巴士；去程坐左側（AB）、回程靠右（CD）。",
+   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
+   "ulabel": "高速巴士 訂票",
+   "stay": "東橫 INN 松本站東口",
+   "stayUrl": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
+  },
+  {
+   "date": "10/28",
+   "r": "cedar",
+   "leaf": true,
+   "dest": "上高地",
+   "trans": "去程：松本巴士總站搭 5:30 直達巴士到上高地。回程：15:15 巴士到新島島站轉電車回松本（已含電車票）。",
+   "note": "9/27 23:00 訂票。清晨極冷可能結霜，禦寒裝備同立山黑部，中午回溫再脫。",
+   "url": "https://japanbusonline.com/zh-tw/DestinationSearch/1",
+   "ulabel": "巴士 訂票",
+   "stay": "東橫 INN 松本站東口",
+   "stayUrl": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
+  },
+  {
+   "date": "10/29",
+   "r": "hida",
+   "leaf": false,
+   "dest": "松本城",
+   "trans": "上午：步行至國寶松本城。下午：13:05–15:38 巴士前往高山。",
+   "note": "9/28 23:00 訂巴士票。",
+   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
+   "ulabel": "高速巴士 訂票",
+   "stay": "Tabino Hotel Satellite（高山）",
+   "stayUrl": "https://maps.app.goo.gl/bDSbYodPWsvwXU3R9"
+  },
+  {
+   "date": "10/30",
+   "r": "hida",
+   "leaf": true,
+   "dest": "合掌村・高山老街・宮川中橋",
+   "trans": "07:20 或 07:50 預約制濃飛巴士。先搭接駁車上展望台再回村內散步，13:30 或 14:00 返高山。下午逛高山老街、吃甜點。",
+   "note": "9/29 23:00 訂票。回濃飛巴士總站領明天巴士票與纜車兌換券。",
+   "url": "https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421",
+   "ulabel": "濃飛巴士 訂票",
+   "stay": "Tabino Hotel Satellite（高山）",
+   "stayUrl": "https://maps.app.goo.gl/bDSbYodPWsvwXU3R9"
+  },
+  {
+   "date": "10/31",
+   "r": "hida",
+   "leaf": true,
+   "dest": "新穗高纜車",
+   "trans": "07:40 濃飛巴士直達新穗高（約 1.5 小時，無法預約需現場排隊）。憑兌換券換纜車票，搭雙層纜車至山頂展望台看北阿爾卑斯連峰。",
+   "note": "9/30 訂纜車套票。",
+   "url": "https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/",
+   "ulabel": "KLOOK 套票",
+   "stay": "Tabino Hotel Satellite（高山）",
+   "stayUrl": "https://maps.app.goo.gl/bDSbYodPWsvwXU3R9"
+  },
+  {
+   "date": "11/01",
+   "r": "persimmon",
+   "leaf": false,
+   "dest": "宮川朝市・大須觀音・大須商店街",
+   "trans": "上午：宮川朝市。下午：JR 特急飛驒 10 號（ひだ10号 12:35–15:04）回名古屋。下午：大須觀音、大須商店街。",
+   "note": "9/30 23:00 訂票。",
+   "url": "https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc",
+   "ulabel": "JR e5489 訂票",
+   "stay": "東橫 INN 名古屋丸之內",
+   "stayUrl": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
+  },
+  {
+   "date": "11/02",
+   "r": "persimmon",
+   "leaf": false,
+   "dest": "馬籠宿・妻籠宿",
+   "trans": "08:20 名古屋站 VIP LINER 巴士站集合（一日遊）。",
+   "note": "10/2 訂票。",
+   "url": "https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/",
+   "ulabel": "KLOOK 訂票",
+   "stay": "東橫 INN 名古屋丸之內",
+   "stayUrl": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
+  },
+  {
+   "date": "11/03",
+   "r": "persimmon",
+   "leaf": false,
+   "dest": "名古屋城",
+   "trans": "上午：名古屋城。下午：大須觀音、大須商店街。",
+   "note": "",
+   "url": "",
+   "ulabel": "",
+   "stay": "東橫 INN 名古屋丸之內",
+   "stayUrl": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
+  },
+  {
+   "date": "11/04",
+   "r": "home",
+   "leaf": false,
+   "dest": "返台",
+   "trans": "上午：最後補貨。下午前往中部國際機場，搭國泰 CX531（16:40–19:15）回台灣。",
+   "note": "",
+   "url": "",
+   "ulabel": "",
+   "stay": "溫暖的家 ♡",
+   "stayUrl": ""
+  }
+ ],
+ "TODOS": [
+  {
+   "id": "tk",
+   "due": "2026-07-31",
+   "time": "09:00",
+   "url": "https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html",
+   "title": "立山黑部 早鳥票（官網）",
+   "forDay": "10/26 立山黑部橫越"
+  },
+  {
+   "id": "hida3",
+   "due": "2026-09-22",
+   "time": "23:00",
+   "url": "https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc",
+   "title": "JR 特急飛驒 3 號（名古屋→富山）",
+   "forDay": "10/23 富山"
+  },
+  {
+   "id": "togakushi",
+   "due": "2026-09-26",
+   "time": "23:00",
+   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
+   "title": "戶隱・善光寺 高速巴士",
+   "forDay": "10/27 戶隱奧社・善光寺"
+  },
+  {
+   "id": "kamikochi",
+   "due": "2026-09-27",
+   "time": "23:00",
+   "url": "https://japanbusonline.com/zh-tw/DestinationSearch/1",
+   "title": "上高地 直達巴士",
+   "forDay": "10/28 上高地"
+  },
+  {
+   "id": "mtTakayama",
+   "due": "2026-09-28",
+   "time": "23:00",
+   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
+   "title": "松本→高山 高速巴士",
+   "forDay": "10/29 松本城"
+  },
+  {
+   "id": "shirakawa",
+   "due": "2026-09-29",
+   "time": "23:00",
+   "url": "https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421",
+   "title": "合掌村 濃飛巴士（預約制）",
+   "forDay": "10/30 合掌村"
+  },
+  {
+   "id": "ropeway",
+   "due": "2026-09-30",
+   "time": "",
+   "url": "https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/",
+   "title": "新穗高纜車套票",
+   "forDay": "10/31 新穗高纜車"
+  },
+  {
+   "id": "hida10",
+   "due": "2026-09-30",
+   "time": "23:00",
+   "url": "https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc",
+   "title": "JR 特急飛驒 10 號（高山→名古屋）",
+   "forDay": "11/01 回名古屋"
+  },
+  {
+   "id": "magome",
+   "due": "2026-10-02",
+   "time": "",
+   "url": "https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/",
+   "title": "馬籠・妻籠 VIP LINER 一日遊",
+   "forDay": "11/02 馬籠妻籠"
+  }
+ ],
+ "CATS": [
+  {
+   "id": "transport",
+   "color": "#5b7c91",
+   "name": "交通"
+  },
+  {
+   "id": "lodging",
+   "color": "#7a6a9e",
+   "name": "住宿"
+  },
+  {
+   "id": "food",
+   "color": "#c2693a",
+   "name": "餐飲"
+  },
+  {
+   "id": "ticket",
+   "color": "#5d7e57",
+   "name": "門票・活動"
+  },
+  {
+   "id": "shopping",
+   "color": "#b8472e",
+   "name": "購物"
+  },
+  {
+   "id": "other",
+   "color": "#928a7d",
+   "name": "其他"
+  }
+ ],
+ "TRANSPORT_EST": [
+  {
+   "date": "2026-10-21",
+   "jpy": 1340,
+   "note": "機場→名古屋 名鐵 μ-Sky"
+  },
+  {
+   "date": "2026-10-22",
+   "jpy": 1260,
+   "note": "名古屋↔犬山 名鐵特急（來回）"
+  },
+  {
+   "date": "2026-10-23",
+   "jpy": 6140,
+   "note": "名古屋→富山 特急飛驒3號 指定席"
+  },
+  {
+   "date": "2026-10-24",
+   "jpy": 1140,
+   "note": "富山↔雨晴海岸 愛之風＋冰見線"
+  },
+  {
+   "date": "2026-10-25",
+   "jpy": 4000,
+   "note": "富山↔金澤（來回）＋城下町周遊巴士"
+  },
+  {
+   "date": "2026-10-26",
+   "jpy": 1230,
+   "note": "電鐵富山→立山"
+  },
+  {
+   "date": "2026-10-26",
+   "jpy": 13820,
+   "note": "立山→信濃大町 阿爾卑斯橫越"
+  },
+  {
+   "date": "2026-10-26",
+   "jpy": 680,
+   "note": "信濃大町→松本"
+  },
+  {
+   "date": "2026-10-26",
+   "jpy": 2500,
+   "note": "立山黑部 行李代運（每件）"
+  },
+  {
+   "date": "2026-10-27",
+   "jpy": 5200,
+   "note": "松本↔長野↔戶隱＋善光寺巴士"
+  },
+  {
+   "date": "2026-10-28",
+   "jpy": 4550,
+   "note": "松本↔上高地 電鐵＋巴士（來回）"
+  },
+  {
+   "date": "2026-10-29",
+   "jpy": 4400,
+   "note": "松本→高山 高速巴士"
+  },
+  {
+   "date": "2026-10-30",
+   "jpy": 4600,
+   "note": "高山↔合掌村 濃飛巴士（來回）"
+  },
+  {
+   "date": "2026-10-31",
+   "jpy": 7000,
+   "note": "新穗高 巴士＋纜車套票"
+  },
+  {
+   "date": "2026-11-01",
+   "jpy": 6140,
+   "note": "高山→名古屋 特急飛驒10號 指定席"
+  },
+  {
+   "date": "2026-11-02",
+   "jpy": 8000,
+   "note": "馬籠妻籠 VIP LINER 一日遊（估）"
+  },
+  {
+   "date": "2026-11-04",
+   "jpy": 1340,
+   "note": "名古屋→機場 名鐵 μ-Sky"
+  }
+ ]
+}

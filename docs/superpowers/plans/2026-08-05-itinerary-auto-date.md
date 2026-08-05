@@ -12,7 +12,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-05-itinerary-auto-date-design.md`
 
-**路徑簡寫：** 以下 `$SP` 代表 `/private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad`
+**測試位置：** 本次產出的測試腳本已收進 repo 的 `tests/` 目錄，用 `sh tests/run-all.sh` 一次跑完。下方步驟裡的 `tests/xxx.js` 即為該目錄下的檔案。
 
 ---
 
@@ -20,11 +20,11 @@
 
 **Files:**
 - Modify: `index.html`（在 `moveDay` 前面新增函式）
-- Test: `/private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js`
+- Test: `tests/test-resequence.js`
 
 - [ ] **Step 1: 寫失敗測試**
 
-建立 `/private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js`：
+建立 `tests/test-resequence.js`：
 
 ```js
 const fs = require('fs');
@@ -114,7 +114,7 @@ console.log(`\n${passed}/8 passed`);
 
 Run:
 ```bash
-node /private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js
+node tests/test-resequence.js
 ```
 Expected: `FAIL: 在 index.html 找不到 resequenceDates()`，exit code 1。
 
@@ -141,7 +141,7 @@ function resequenceDates(){
 
 Run:
 ```bash
-node /private/tmp/claude-501/-Users-raychang-tirp/29d6540d-5614-4f2b-9e56-f7a25a26c8e2/scratchpad/test-resequence.js
+node tests/test-resequence.js
 ```
 Expected: 8 個 `✓`、`8/8 passed`，exit code 0。
 
@@ -314,7 +314,7 @@ Expected: 四行都是 `1`。
 
 - [ ] **Step 6: 加迴歸測試，鎖住第 1 天不被換走**
 
-建立 `$SP/test-moveday.js`。這支測試從 `index.html` 原始碼把 `resequenceDates` 與 `moveDay` 兩個函式一起抽出來 eval，並把 `pushField` / `renderTimeline` 換成空殼，因此測到的是真正的 `moveDay`：
+建立 `tests/test-moveday.js`。這支測試從 `index.html` 原始碼把 `resequenceDates` 與 `moveDay` 兩個函式一起抽出來 eval，並把 `pushField` / `renderTimeline` 換成空殼，因此測到的是真正的 `moveDay`：
 
 ```js
 const fs = require('fs');
@@ -389,7 +389,7 @@ console.log(`\n${passed}/5 passed`);
 
 Run:
 ```bash
-node $SP/test-moveday.js && node $SP/test-resequence.js
+node tests/test-moveday.js && node tests/test-resequence.js
 ```
 Expected: `5/5 passed` 與 `8/8 passed`，兩支都是 exit code 0。
 
@@ -486,7 +486,7 @@ git commit -m "移動、刪除、儲存行程後自動重算日期"
 
 - [ ] **Step 3c: 驗證格式檢查有效**
 
-建立 `$SP/test-datevalidate.js`，直接測那段驗證條件的邏輯：
+建立 `tests/test-datevalidate.js`，直接測那段驗證條件的邏輯：
 
 ```js
 const assert = require('assert');
@@ -504,7 +504,7 @@ console.log(`✓ 接受 ${accept.length} 種合法格式，擋下 ${reject.lengt
 
 Run:
 ```bash
-node $SP/test-datevalidate.js
+node tests/test-datevalidate.js
 ```
 Expected: `✓ 接受 4 種合法格式，擋下 10 種不合法格式`，exit code 0。
 
@@ -532,7 +532,7 @@ git commit -m "編輯視窗日期欄位改唯讀，只有第 1 天可調整"
 
 > **執行時的實際情況（2026-08-05）：** Chrome 擴充功能未連線，無法做瀏覽器自動化。改為兩件事取代：
 >
-> 1. **Node DOM harness**（`$SP/test-dayform.js`）：用最小 DOM stub 跑從原始碼抽出來的真正 `openDayForm` / `saveDayForm`，涵蓋唯讀狀態的四種情境、狀態重設、第 1 天平移、非法日期、空白日期、全形斜線、中間天編輯、新增一天、寫回內容不含 `wd`，共 12 項全綠。
+> 1. **Node DOM harness**（`tests/test-dayform.js`）：用最小 DOM stub 跑從原始碼抽出來的真正 `openDayForm` / `saveDayForm`，涵蓋唯讀狀態的四種情境、狀態重設、第 1 天平移、非法日期、空白日期、全形斜線、中間天編輯、新增一天、寫回內容不含 `wd`，共 12 項全綠。
 > 2. **端對端腳本**：用真實的 `DEFAULT_DAYS` 15 天資料跑 `moveDay`，確認日期釘位、星期同步、第 1 天 ↓ 不會讓末日從 11/04 跑掉。
 >
 > 累計自動化測試 43 項（12 + 17 + 6 + 8）全綠。
