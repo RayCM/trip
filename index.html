@@ -772,6 +772,27 @@ function parseCsv(text){
  if(cell!==''||row.length){row.push(cell);rows.push(row);}
  return rows;
 }
+// CSV 二維陣列 → day 物件。第一列是標題，依標題文字找欄位，欄位順序改變也不會錯位。
+function sheetRowsToDays(rows){
+ const days=[],skipped=[],duplicates=[],seen={};
+ if(!rows.length)return{days,skipped,duplicates};
+ const head=rows[0].map(h=>String(h||'').trim());
+ const col=name=>head.indexOf(name);
+ const idx={date:col('日期'),dest:col('目的地'),trans:col('詳細交通與行程細節'),
+  stay:col('住宿地點'),note:col('備註'),url:col('訂票網址')};
+ const val=(row,k)=>idx[k]<0?'':String(row[idx[k]]||'').trim();
+ rows.slice(1).forEach((row,i)=>{
+  if(!row.some(c=>String(c||'').trim()))return; // 整列空白，忽略
+  const d=parseMD(val(row,'date'));
+  if(!d){skipped.push(i+2);return;} // +2：跳過標題列且轉成 1-based
+  const date=String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  const day={date,dest:val(row,'dest'),trans:val(row,'trans'),
+   stay:val(row,'stay'),note:val(row,'note'),url:val(row,'url')};
+  if(date in seen){days[seen[date]]=day;duplicates.push(date);} // 重複日期以最後一列為準
+  else{seen[date]=days.length;days.push(day);}
+ });
+ return{days,skipped,duplicates};
+}
 
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;
