@@ -14,6 +14,12 @@ const grab = (re, label) => {
 // applySheetDiff 會就地改動全域的 itinerary，宣告在這裡讓 direct eval 的函式綁到它
 let itinerary = [];
 
+// renderSheetDiff 需要的最小 DOM stub 與全域
+let sheetDiffs = [];
+const els = {};
+const mkEl = id => ({ id, innerHTML: '', textContent: '', style: {}, disabled: false });
+let document = { getElementById: id => els[id] || (els[id] = mkEl(id)) };
+
 // diffSheet 內部用 t() 取值（app 端欄位可能還是舊的 {zh,en,ja} 物件）也用 SHEET_FIELDS
 // 決定比對哪些欄位，兩者都不在函式本體裡，必須各自抽出來一起 eval
 const FN = eval([
@@ -25,9 +31,13 @@ const FN = eval([
   grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
   grab(/function resequenceDates\(\)\{[\s\S]*?\n\}/, 'resequenceDates()'),
   grab(/function applySheetDiff\(diffs\)\{[\s\S]*?\n\}/, 'applySheetDiff()'),
-  ';({parseCsv,sheetRowsToDays,diffSheet,applySheetDiff})',
+  grab(/function esc\(s\)\{[^\n]*\}/, 'esc()'),
+  grab(/const DIFF_LABEL=[^\n]*/, 'DIFF_LABEL'),
+  grab(/function renderSheetDiff\(parsed\)\{[\s\S]*?\n\}/, 'renderSheetDiff()'),
+  ';({parseCsv,sheetRowsToDays,diffSheet,applySheetDiff,renderSheetDiff})',
 ].join('\n'));
 const parseCsvFn = FN.parseCsv, toDays = FN.sheetRowsToDays, diffFn = FN.diffSheet, applyFn = FN.applySheetDiff;
+const renderFn = FN.renderSheetDiff;
 
 let passed = 0, total = 0;
 const check = (name, fn) => {
@@ -272,6 +282,73 @@ check('套用：新增中間某天時會插在正確位置', () => {
   applyFn([{ kind: 'add', date: '10/22', day: { date: '10/22', dest: 'B', trans: '', stay: '', note: '', url: '' }, checked: true }]);
   assert.deepStrictEqual(itinerary.map(d => d.dest), ['A', 'B', 'C'], '新增的天應插在中間');
   assert.deepStrictEqual(itinerary.map(d => d.date), ['10/21', '10/22', '10/23']);
+});
+
+const noSkips = { skipped: [], duplicates: [] };
+const diffHtml = () => els['diff-list'].innerHTML;
+
+check('差異視窗：checkbox 索引對應 sheetDiffs 的真實索引', () => {
+  // missing 混在中間時，若用過濾後陣列的索引，勾選會靜默改到別的項目
+  sheetDiffs = [
+    { kind: 'missing', date: '10/20' },
+    { kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true },
+  ];
+  renderFn(noSkips);
+  const m = diffHtml().match(/sheetDiffs\[(\d+)\]\.checked/g);
+  assert.deepStrictEqual(m, ['sheetDiffs[1].checked'],
+    'change 項目在 sheetDiffs 的索引是 1，不是過濾後的 0');
+});
+
+check('差異視窗：change 顯示新舊值，清空顯示「（清空）」', () => {
+  sheetDiffs = [{ kind: 'change', date: '10/21', field: 'note', from: '舊備註', to: '', checked: true }];
+  renderFn(noSkips);
+  assert.ok(diffHtml().includes('舊備註'), '應顯示原值');
+  assert.ok(diffHtml().includes('（清空）'), '空值應顯示為清空');
+  assert.ok(diffHtml().includes('備註'), '應顯示欄位中文名');
+});
+
+check('差異視窗：checked 屬性正確反映勾選狀態', () => {
+  // 注意不能用 /checkbox[^>]*checked/ 判斷——onchange="sheetDiffs[0].checked=..." 裡也有 checked 字樣
+  const attr = () => / checked onchange/.test(diffHtml());
+
+  sheetDiffs = [{ kind: 'add', date: '11/05', day: { dest: '新的一天' }, checked: false }];
+  renderFn(noSkips);
+  assert.ok(diffHtml().includes('新增這天'));
+  assert.ok(diffHtml().includes('新的一天'));
+  assert.strictEqual(attr(), false, 'add 預設不該有 checked 屬性');
+
+  sheetDiffs = [{ kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true }];
+  renderFn(noSkips);
+  assert.strictEqual(attr(), true, 'checked:true 應輸出 checked 屬性');
+});
+
+check('差異視窗：沒有差異時顯示一致訊息並隱藏套用按鈕', () => {
+  sheetDiffs = [];
+  renderFn(noSkips);
+  assert.ok(diffHtml().includes('試算表與目前行程一致'));
+  assert.strictEqual(els['sheet-apply'].style.display, 'none');
+});
+
+check('差異視窗：有差異時顯示套用按鈕', () => {
+  sheetDiffs = [{ kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true }];
+  renderFn(noSkips);
+  assert.strictEqual(els['sheet-apply'].style.display, 'block');
+});
+
+check('差異視窗：略過、重複、missing 都會提示', () => {
+  sheetDiffs = [{ kind: 'missing', date: '10/30' }];
+  renderFn({ skipped: [4, 7], duplicates: ['10/21'] });
+  const h = diffHtml();
+  assert.ok(h.includes('第 4、7 列'), '應列出被略過的列號');
+  assert.ok(h.includes('重複日期'), '應提示重複日期');
+  assert.ok(h.includes('10/30') && h.includes('不會被刪除'), '應提示 app 多出來的天不會被刪');
+});
+
+check('差異視窗：內容有做 HTML 跳脫', () => {
+  sheetDiffs = [{ kind: 'change', date: '10/21', field: 'dest', from: '', to: '<img src=x onerror=alert(1)>', checked: true }];
+  renderFn(noSkips);
+  assert.ok(!diffHtml().includes('<img'), '使用者內容必須跳脫，不能直接注入標籤');
+  assert.ok(diffHtml().includes('&lt;img'), '應被跳脫成實體');
 });
 
 console.log(`\n${passed}/${total} passed`);
