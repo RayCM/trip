@@ -24,8 +24,10 @@ sh tests/run-all.sh
 | `test-dayform.js` | 12 | `openDayForm()` / `saveDayForm()`：日期欄位唯讀的四種情境、驗證失敗時不寫回也不關視窗 |
 | `test-legacy.js` | 7 | 線上舊資料相容性：`t()` 讀得懂 `{zh,en,ja}` 物件、會被誤讀的日期格式必須被擋下 |
 | `test-render.js` | 14 | 用 DOM stub 實際執行整段主 script 與 `renderAll()`，檢查三個分頁的渲染輸出 |
+| `test-sheet-import.js` | 41 | CSV 解析、列轉換、差異計算、套用差異、差異視窗渲染 |
+| `test-sheet-e2e.js` | 7 | 用真實試算表 fixture 跑完整條匯入流程，含冪等性 |
 
-共 64 項。
+共 112 項。
 
 ## 中文字串快照
 
@@ -41,3 +43,10 @@ node tests/i18n-snapshot.js > tests/baseline.json
 
 - **`t()` 的 `o.zh` fallback 不可移除。** Firebase 上的共用行程資料仍是 `{zh,en,ja}` 物件結構，拿掉 fallback 會讓線上內容整片顯示空白。`test-legacy.js` 守著這一點。
 - **`STAY` 不可壓平成字串。** `url` 與名稱在同一個物件裡，壓平會讓住宿的 Google Maps 連結消失。`test-render.js` 守著這一點。
+- **`tests/fixtures/sheet-sample.csv` 是 Google 試算表的副本。** 試算表若增減欄位或改欄位名稱，`test-sheet-import.js` 會紅——那是正確的警示，代表匯入功能的欄位對應要跟著更新，不是測試壞了。更新 fixture：
+
+  ```sh
+  curl -sL "https://docs.google.com/spreadsheets/d/<SHEET_ID>/export?format=csv&gid=<SHEET_GID>" -o tests/fixtures/sheet-sample.csv
+  ```
+
+  `SHEET_ID` 與 `SHEET_GID` 的值在 `index.html` 裡。
