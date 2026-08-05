@@ -11,13 +11,18 @@ const grab = (re, label) => {
   return m[0];
 };
 
+// diffSheet 內部用 t() 取值（app 端欄位可能還是舊的 {zh,en,ja} 物件）也用 SHEET_FIELDS
+// 決定比對哪些欄位，兩者都不在函式本體裡，必須各自抽出來一起 eval
 const FN = eval([
+  grab(/const t=o=>[^\n]*/, 't()'),
   grab(/function parseMD\(str\)\{[\s\S]*?\n\}/, 'parseMD()'),
   grab(/function parseCsv\(text\)\{[\s\S]*?\n\}/, 'parseCsv()'),
   grab(/function sheetRowsToDays\(rows\)\{[\s\S]*?\n\}/, 'sheetRowsToDays()'),
-  ';({parseCsv,sheetRowsToDays})',
+  grab(/const SHEET_FIELDS=[^\n]*/, 'SHEET_FIELDS'),
+  grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
+  ';({parseCsv,sheetRowsToDays,diffSheet})',
 ].join('\n'));
-const parseCsvFn = FN.parseCsv, toDays = FN.sheetRowsToDays;
+const parseCsvFn = FN.parseCsv, toDays = FN.sheetRowsToDays, diffFn = FN.diffSheet;
 
 let passed = 0, total = 0;
 const check = (name, fn) => {
@@ -125,6 +130,78 @@ check('轉換：真實試算表 15 天，日期正規化正確', () => {
   assert.strictEqual(r.days[14].date, '11/04');
   assert.strictEqual(r.days[3].dest, '金澤車站、兼六園');
   assert.ok(r.days[2].note.includes('きときと市場'), '含換行的備註被截斷');
+});
+
+const mkDay = o => Object.assign({ date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: 'N', url: 'U' }, o);
+
+check('差異：完全相同時回空清單', () => {
+  const app = [mkDay({})];
+  const sheet = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: 'N', url: 'U' }];
+  assert.deepStrictEqual(diffFn(sheet, app), []);
+});
+
+check('差異：只列出真的有差的欄位', () => {
+  const app = [mkDay({})];
+  const sheet = [{ date: '10/21', dest: '改過了', trans: 'T', stay: 'S', note: 'N', url: 'U' }];
+  const d = diffFn(sheet, app);
+  assert.strictEqual(d.length, 1);
+  assert.deepStrictEqual(
+    { kind: d[0].kind, date: d[0].date, field: d[0].field, from: d[0].from, to: d[0].to, checked: d[0].checked },
+    { kind: 'change', date: '10/21', field: 'dest', from: 'A', to: '改過了', checked: true });
+});
+
+check('差異：順序不同仍能依日期配對', () => {
+  const app = [mkDay({ date: '10/21', dest: 'A' }), mkDay({ date: '10/22', dest: 'B' })];
+  const sheet = [
+    { date: '10/22', dest: 'B', trans: 'T', stay: 'S', note: 'N', url: 'U' },
+    { date: '10/21', dest: '改過了', trans: 'T', stay: 'S', note: 'N', url: 'U' },
+  ];
+  const d = diffFn(sheet, app);
+  assert.strictEqual(d.length, 1);
+  assert.strictEqual(d[0].date, '10/21');
+});
+
+check('差異：空儲存格視為刪除', () => {
+  const app = [mkDay({ url: 'https://x.com' })];
+  const sheet = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: 'N', url: '' }];
+  const d = diffFn(sheet, app).filter(x => x.field === 'url');
+  assert.strictEqual(d.length, 1);
+  assert.strictEqual(d[0].to, '');
+});
+
+check('差異：試算表多一天標為 add，預設不勾選', () => {
+  const app = [mkDay({})];
+  const sheet = [
+    { date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: 'N', url: 'U' },
+    { date: '10/22', dest: '新的一天', trans: '', stay: '', note: '', url: '' },
+  ];
+  const d = diffFn(sheet, app);
+  assert.strictEqual(d.length, 1);
+  assert.strictEqual(d[0].kind, 'add');
+  assert.strictEqual(d[0].date, '10/22');
+  assert.strictEqual(d[0].checked, false, '新增天預設不該勾選');
+});
+
+check('差異：app 多一天標為 missing，且沒有 checked', () => {
+  const app = [mkDay({ date: '10/21' }), mkDay({ date: '10/22' })];
+  const sheet = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: 'N', url: 'U' }];
+  const d = diffFn(sheet, app);
+  assert.strictEqual(d.length, 1);
+  assert.strictEqual(d[0].kind, 'missing');
+  assert.strictEqual(d[0].date, '10/22');
+  assert.ok(!('checked' in d[0]), 'missing 不該有 checked');
+});
+
+check('差異：app 端是 {zh,en,ja} 物件時用 zh 比對，相同就不列出', () => {
+  const app = [mkDay({ dest: { zh: 'A', en: 'A-en', ja: 'A-ja' } })];
+  const sheet = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: 'N', url: 'U' }];
+  assert.deepStrictEqual(diffFn(sheet, app), []);
+});
+
+check('差異：app 缺欄位（undefined）視為空字串', () => {
+  const app = [{ date: '10/21', dest: 'A' }];
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '' }];
+  assert.deepStrictEqual(diffFn(sheet, app), []);
 });
 
 console.log(`\n${passed}/${total} passed`);

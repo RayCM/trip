@@ -793,6 +793,23 @@ function sheetRowsToDays(rows){
  });
  return{days,skipped,duplicates};
 }
+const SHEET_FIELDS=[['dest','目的地'],['trans','交通與行程'],['stay','住宿'],['note','備註'],['url','訂票網址']];
+// 比對試算表與目前行程，回傳差異清單。app 端的值可能是舊的 {zh,en,ja} 物件，一律用 t() 取中文比。
+function diffSheet(sheetDays,list){
+ const diffs=[],byDate={};
+ list.forEach((d,i)=>{byDate[d.date]=i;});
+ sheetDays.forEach(sd=>{
+  const i=byDate[sd.date];
+  if(i===undefined){diffs.push({kind:'add',date:sd.date,day:sd,checked:false});return;}
+  SHEET_FIELDS.forEach(([f])=>{
+   const from=t(list[i][f]),to=sd[f];
+   if(from!==to)diffs.push({kind:'change',date:sd.date,field:f,from,to,checked:true});
+  });
+ });
+ const sheetDates={};sheetDays.forEach(d=>{sheetDates[d.date]=true;});
+ list.forEach(d=>{if(!sheetDates[d.date])diffs.push({kind:'missing',date:d.date});});
+ return diffs;
+}
 
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;
