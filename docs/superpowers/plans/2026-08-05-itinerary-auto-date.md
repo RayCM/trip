@@ -180,7 +180,7 @@ Run:
 ```bash
 cd /Users/raychang/tirp && grep -n "d\.wd\|day\.wd\|\.wd=" index.html
 ```
-Expected: 只剩 `saveDayForm()` 裡的 `day.wd=wdFromDate(day.date);` 一行（下一步移除）。`.card .wd{` 是 CSS class 名稱，不會被這個 pattern 命中。
+Expected: 兩行——`saveDayForm()` 裡的 `day.wd=wdFromDate(day.date);`（下一步移除），以及 `resequenceDates()` 裡的 `delete d.wd;`（Task 1 已加入，保留不動）。`.card .wd{` 是 CSS class 名稱，不會被這個 pattern 命中。
 
 - [ ] **Step 3: 移除 `saveDayForm()` 的 wd 寫入**
 
@@ -457,13 +457,59 @@ git commit -m "移動、刪除、儲存行程後自動重算日期"
  document.getElementById('m-date-hint').style.display=dateEditable?'none':'block';
 ```
 
+- [ ] **Step 3b: 加上日期格式驗證**
+
+日期欄位可輸入時（第 1 天／行程為空），它決定整趟 15 天的日期。`resequenceDates()` 用的 regex 是 `/(\d{1,2})\D+(\d{1,2})/`，很寬鬆：輸入 `2026-10-21` 會被解析成「26 月 10 日」，錨點變成 `02/10`，整趟行程改寫到二月並寫回 Firebase。雖然重新輸入正確日期就能救回來（內容不會遺失），但要擋在前面。
+
+在 `saveDayForm()` 中找到：
+
+```js
+ const day={date:v('m-date'),r:document.getElementById('m-region').value,
+```
+
+在這一行**之前**插入：
+
+```js
+ // 日期欄位可輸入時（第 1 天）它決定整趟行程，格式錯了會把全部日期算歪
+ const dateEl=document.getElementById('m-date');
+ if(!dateEl.readOnly&&v('m-date')){
+  const md=v('m-date').match(/^(\d{1,2})\/(\d{1,2})$/);
+  if(!md||+md[1]<1||+md[1]>12||+md[2]<1||+md[2]>31){alert('日期請填 MM/DD，例如 10/21');return;}
+ }
+```
+
+（`alert()` 是這個檔案既有的錯誤提示方式，見 `toggleEdit()`。）
+
+- [ ] **Step 3c: 驗證格式檢查有效**
+
+建立 `$SP/test-datevalidate.js`，直接測那段驗證條件的邏輯：
+
+```js
+const assert = require('assert');
+const ok = s => {
+  const md = String(s).match(/^(\d{1,2})\/(\d{1,2})$/);
+  return !(!md || +md[1] < 1 || +md[1] > 12 || +md[2] < 1 || +md[2] > 31);
+};
+const accept = ['10/21', '1/1', '09/08', '12/31'];
+const reject = ['2026-10-21', '2026/10/21', '10-21', '13/45', '0/5', '10/0', '10/32', 'abc', '10/21 ', ''];
+accept.forEach(s => assert.ok(ok(s), '應接受但被擋下: ' + JSON.stringify(s)));
+reject.forEach(s => assert.ok(!ok(s), '應擋下但被接受: ' + JSON.stringify(s)));
+console.log(`✓ 接受 ${accept.length} 種合法格式，擋下 ${reject.length} 種不合法格式`);
+```
+
+Run:
+```bash
+node $SP/test-datevalidate.js
+```
+Expected: `✓ 接受 4 種合法格式，擋下 10 種不合法格式`，exit code 0。
+
 - [ ] **Step 4: 靜態檢查**
 
 Run:
 ```bash
-cd /Users/raychang/tirp && grep -n "m-date-hint\|dateEditable\|input\[readonly\]" index.html
+cd /Users/raychang/tirp && grep -n "m-date-hint\|dateEditable\|dateEl\|input\[readonly\]" index.html
 ```
-Expected: 6 行——HTML 的 `m-date-hint` 1 行、CSS 的 `input[readonly]` 2 行、JS 的 `dateEditable` 宣告 1 行與 `dateEl.readOnly=!dateEditable;` 1 行、`m-date-hint` 的 display 設定 1 行。
+Expected: 10 行——HTML 的 `m-date-hint` 1 行；CSS 的 `input[readonly]` 2 行；`openDayForm()` 裡 5 行（`dateEl` 宣告、`dateEditable` 宣告、`dateEl.value`、`dateEl.readOnly`、`m-date-hint` 的 display 設定）；`saveDayForm()` 裡 2 行（`dateEl` 宣告、`if(!dateEl.readOnly&&…)`）。
 
 - [ ] **Step 5: Commit**
 
