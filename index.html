@@ -810,6 +810,24 @@ function diffSheet(sheetDays,list){
  list.forEach(d=>{if(!sheetDates[d.date])diffs.push({kind:'missing',date:d.date});});
  return diffs;
 }
+// 套用被勾選的差異。missing 只是告知，不刪除任何一天。
+function applySheetDiff(diffs){
+ const byDate={};itinerary.forEach((d,i)=>{byDate[d.date]=i;});
+ diffs.filter(x=>x.kind==='change'&&x.checked).forEach(x=>{
+  const i=byDate[x.date];if(i===undefined)return;
+  const day=itinerary[i];
+  if(x.field==='url'&&t(day.url)!==x.to)delete day.ulabel; // 網址換了，舊按鈕文字會誤導
+  if(x.to)day[x.field]=x.to; else delete day[x.field];
+ });
+ diffs.filter(x=>x.kind==='add'&&x.checked).forEach(x=>{
+  const day={};Object.keys(x.day).forEach(k=>{if(x.day[k])day[k]=x.day[k];});
+  day.r='persimmon';
+  itinerary.push(day);
+ });
+ // 新增的天是 push 到最後的，若插的是中間某天，不先排序 resequenceDates() 會把它當成最後一天
+ itinerary.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ resequenceDates();
+}
 
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;

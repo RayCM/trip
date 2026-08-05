@@ -11,6 +11,9 @@ const grab = (re, label) => {
   return m[0];
 };
 
+// applySheetDiff 會就地改動全域的 itinerary，宣告在這裡讓 direct eval 的函式綁到它
+let itinerary = [];
+
 // diffSheet 內部用 t() 取值（app 端欄位可能還是舊的 {zh,en,ja} 物件）也用 SHEET_FIELDS
 // 決定比對哪些欄位，兩者都不在函式本體裡，必須各自抽出來一起 eval
 const FN = eval([
@@ -20,9 +23,11 @@ const FN = eval([
   grab(/function sheetRowsToDays\(rows\)\{[\s\S]*?\n\}/, 'sheetRowsToDays()'),
   grab(/const SHEET_FIELDS=[^\n]*/, 'SHEET_FIELDS'),
   grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
-  ';({parseCsv,sheetRowsToDays,diffSheet})',
+  grab(/function resequenceDates\(\)\{[\s\S]*?\n\}/, 'resequenceDates()'),
+  grab(/function applySheetDiff\(diffs\)\{[\s\S]*?\n\}/, 'applySheetDiff()'),
+  ';({parseCsv,sheetRowsToDays,diffSheet,applySheetDiff})',
 ].join('\n'));
-const parseCsvFn = FN.parseCsv, toDays = FN.sheetRowsToDays, diffFn = FN.diffSheet;
+const parseCsvFn = FN.parseCsv, toDays = FN.sheetRowsToDays, diffFn = FN.diffSheet, applyFn = FN.applySheetDiff;
 
 let passed = 0, total = 0;
 const check = (name, fn) => {
@@ -202,6 +207,71 @@ check('差異：app 缺欄位（undefined）視為空字串', () => {
   const app = [{ date: '10/21', dest: 'A' }];
   const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '' }];
   assert.deepStrictEqual(diffFn(sheet, app), []);
+});
+
+check('套用：只套用被勾選的變動', () => {
+  itinerary = [mkDay({ date: '10/21', dest: 'A', note: 'N' })];
+  applyFn([
+    { kind: 'change', date: '10/21', field: 'dest', from: 'A', to: '新目的地', checked: true },
+    { kind: 'change', date: '10/21', field: 'note', from: 'N', to: '新備註', checked: false },
+  ]);
+  assert.strictEqual(itinerary[0].dest, '新目的地');
+  assert.strictEqual(itinerary[0].note, 'N', '沒勾的不該被套用');
+});
+
+check('套用：新增天會插入並讓日期重新連續', () => {
+  itinerary = [mkDay({ date: '10/21' }), mkDay({ date: '10/22' })];
+  applyFn([{ kind: 'add', date: '10/23', day: { date: '10/23', dest: '新的', trans: '', stay: '', note: '', url: '' }, checked: true }]);
+  assert.strictEqual(itinerary.length, 3);
+  assert.deepStrictEqual(itinerary.map(d => d.date), ['10/21', '10/22', '10/23']);
+  assert.strictEqual(itinerary[2].dest, '新的');
+});
+
+check('套用：missing 不會刪除任何一天', () => {
+  itinerary = [mkDay({ date: '10/21' }), mkDay({ date: '10/22' })];
+  applyFn([{ kind: 'missing', date: '10/22' }]);
+  assert.strictEqual(itinerary.length, 2);
+});
+
+check('套用：保留 leaf / r / stayUrl', () => {
+  itinerary = [mkDay({ date: '10/21', leaf: true, r: 'slate', stayUrl: 'https://maps.example/x' })];
+  applyFn([{ kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true }]);
+  assert.strictEqual(itinerary[0].leaf, true);
+  assert.strictEqual(itinerary[0].r, 'slate');
+  assert.strictEqual(itinerary[0].stayUrl, 'https://maps.example/x');
+});
+
+check('套用：url 有變動時清掉 ulabel', () => {
+  itinerary = [mkDay({ date: '10/21', url: 'https://old.com', ulabel: 'JR e5489 訂票' })];
+  applyFn([{ kind: 'change', date: '10/21', field: 'url', from: 'https://old.com', to: 'https://new.com', checked: true }]);
+  assert.strictEqual(itinerary[0].url, 'https://new.com');
+  assert.ok(!itinerary[0].ulabel, 'url 換了就不該留舊的按鈕文字');
+});
+
+check('套用：url 沒變動時 ulabel 保留', () => {
+  itinerary = [mkDay({ date: '10/21', url: 'https://x.com', ulabel: 'JR e5489 訂票' })];
+  applyFn([{ kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true }]);
+  assert.strictEqual(itinerary[0].ulabel, 'JR e5489 訂票');
+});
+
+check('套用：空值會覆蓋掉既有內容', () => {
+  itinerary = [mkDay({ date: '10/21', note: '原本的備註' })];
+  applyFn([{ kind: 'change', date: '10/21', field: 'note', from: '原本的備註', to: '', checked: true }]);
+  assert.ok(!itinerary[0].note, '空值應覆蓋掉既有內容');
+});
+
+check('套用：空清單不會改動任何東西', () => {
+  itinerary = [mkDay({ date: '10/21', dest: 'A' })];
+  applyFn([]);
+  assert.strictEqual(itinerary[0].dest, 'A');
+  assert.strictEqual(itinerary.length, 1);
+});
+
+check('套用：新增中間某天時會插在正確位置', () => {
+  itinerary = [mkDay({ date: '10/21', dest: 'A' }), mkDay({ date: '10/23', dest: 'C' })];
+  applyFn([{ kind: 'add', date: '10/22', day: { date: '10/22', dest: 'B', trans: '', stay: '', note: '', url: '' }, checked: true }]);
+  assert.deepStrictEqual(itinerary.map(d => d.dest), ['A', 'B', 'C'], '新增的天應插在中間');
+  assert.deepStrictEqual(itinerary.map(d => d.date), ['10/21', '10/22', '10/23']);
 });
 
 console.log(`\n${passed}/${total} passed`);
