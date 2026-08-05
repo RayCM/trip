@@ -26,6 +26,7 @@ const FN = eval([
   grab(/const t=o=>[^\n]*/, 't()'),
   grab(/function parseMD\(str\)\{[\s\S]*?\n\}/, 'parseMD()'),
   grab(/function parseCsv\(text\)\{[\s\S]*?\n\}/, 'parseCsv()'),
+  grab(/const SHEET_COLS=[[\s\S]*?\];/, 'SHEET_COLS'),
   grab(/function sheetRowsToDays\(rows\)\{[\s\S]*?\n\}/, 'sheetRowsToDays()'),
   grab(/const SHEET_FIELDS=[^\n]*/, 'SHEET_FIELDS'),
   grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
@@ -184,7 +185,7 @@ check('差異：空儲存格視為刪除', () => {
   assert.strictEqual(d[0].to, '');
 });
 
-check('差異：試算表多一天標為 add，預設不勾選', () => {
+check('差異：試算表多一天標為 add，預設勾選', () => {
   const app = [mkDay({})];
   const sheet = [
     { date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: 'N', url: 'U' },
@@ -194,7 +195,7 @@ check('差異：試算表多一天標為 add，預設不勾選', () => {
   assert.strictEqual(d.length, 1);
   assert.strictEqual(d[0].kind, 'add');
   assert.strictEqual(d[0].date, '10/22');
-  assert.strictEqual(d[0].checked, false, '新增天預設不該勾選');
+  assert.strictEqual(d[0].checked, true, '新增天預設要勾選——不勾會讓被擠到最後的內容消失');
 });
 
 check('差異：app 多一天標為 missing，且沒有 checked', () => {
@@ -284,7 +285,62 @@ check('套用：新增中間某天時會插在正確位置', () => {
   assert.deepStrictEqual(itinerary.map(d => d.date), ['10/21', '10/22', '10/23']);
 });
 
-const noSkips = { skipped: [], duplicates: [] };
+check('套用：住宿是 {zh,url} 物件時，地圖連結不會被覆蓋掉', () => {
+  // 線上舊資料的 stay 是 {zh:'…',url:'https://maps…'}，覆蓋成字串會讓連結消失
+  itinerary = [{ date: '10/21', stay: { zh: '東橫 INN 松本站東口', url: 'https://maps.app.goo.gl/abc' } }];
+  applyFn([{ kind: 'change', date: '10/21', field: 'stay', from: '東橫 INN 松本站東口', to: '東橫INN 松本站東口', checked: true }]);
+  assert.strictEqual(itinerary[0].stay, '東橫INN 松本站東口');
+  assert.strictEqual(itinerary[0].stayUrl, 'https://maps.app.goo.gl/abc', '地圖連結必須被保留下來');
+});
+
+check('套用：已有 stayUrl 時不覆蓋它', () => {
+  itinerary = [{ date: '10/21', stay: { zh: 'A', url: 'https://old' }, stayUrl: 'https://user-set' }];
+  applyFn([{ kind: 'change', date: '10/21', field: 'stay', from: 'A', to: 'B', checked: true }]);
+  assert.strictEqual(itinerary[0].stayUrl, 'https://user-set', '使用者自己設的 stayUrl 優先');
+});
+
+check('套用：同一份差異套用兩次不會產生重複的天', () => {
+  itinerary = [mkDay({ date: '10/21' })];
+  const diffs = [{ kind: 'add', date: '10/22', day: { date: '10/22', dest: 'X' }, checked: true }];
+  applyFn(diffs);
+  applyFn(diffs);
+  assert.strictEqual(itinerary.length, 2, '重複套用不該再加一次');
+  assert.deepStrictEqual(itinerary.map(d => d.date), ['10/21', '10/22']);
+});
+
+check('套用：值在比對之後被改過就跳過，不覆蓋別人的編輯', () => {
+  itinerary = [mkDay({ date: '10/21', trans: '旅伴剛剛改的' })];
+  const r = applyFn([{ kind: 'change', date: '10/21', field: 'trans', from: '比對當下的舊值', to: '試算表的值', checked: true }]);
+  assert.strictEqual(itinerary[0].trans, '旅伴剛剛改的', '不該覆蓋掉視窗開著時被改動的值');
+  assert.strictEqual(r.stale, 1, '應回報有 1 項被跳過');
+});
+
+check('套用：回傳值告知跳過筆數，沒跳過時為 0', () => {
+  itinerary = [mkDay({ date: '10/21', dest: 'A' })];
+  const r = applyFn([{ kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true }]);
+  assert.strictEqual(r.stale, 0);
+  assert.strictEqual(itinerary[0].dest, 'B');
+});
+
+check('轉換：缺少欄位標題會被回報，不會靜默把該欄清空', () => {
+  const noNote = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '訂票網址'];
+  const r = toDays([noNote, ['10/21', 'A', 'T', 'S', 'U']]);
+  assert.deepStrictEqual(r.missingCols, ['備註'], '缺少的欄位要被列出來');
+});
+
+check('轉換：欄位齊全時 missingCols 是空的', () => {
+  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '']]);
+  assert.deepStrictEqual(r.missingCols, []);
+});
+
+check('轉換：拿到 HTML（試算表被改成私人）時會回報缺少所有欄位', () => {
+  const html = '<!DOCTYPE html><html><head><title>登入</title></head><body>請登入</body></html>';
+  const r = toDays(parseCsvFn(html));
+  assert.ok(r.missingCols.length >= 1, '應回報缺少欄位而不是回傳 0 天卻說「一致」');
+  assert.ok(r.missingCols.includes('日期'), '至少要偵測到缺少日期欄');
+});
+
+const noSkips = { skipped: [], duplicates: [], missingCols: [] };
 const diffHtml = () => els['diff-list'].innerHTML;
 
 check('差異視窗：checkbox 索引對應 sheetDiffs 的真實索引', () => {
@@ -315,7 +371,7 @@ check('差異視窗：checked 屬性正確反映勾選狀態', () => {
   renderFn(noSkips);
   assert.ok(diffHtml().includes('新增這天'));
   assert.ok(diffHtml().includes('新的一天'));
-  assert.strictEqual(attr(), false, 'add 預設不該有 checked 屬性');
+  assert.strictEqual(attr(), false, 'checked:false 不該有 checked 屬性');
 
   sheetDiffs = [{ kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true }];
   renderFn(noSkips);
@@ -333,6 +389,24 @@ check('差異視窗：有差異時顯示套用按鈕', () => {
   sheetDiffs = [{ kind: 'change', date: '10/21', field: 'dest', from: 'A', to: 'B', checked: true }];
   renderFn(noSkips);
   assert.strictEqual(els['sheet-apply'].style.display, 'block');
+});
+
+check('差異：試算表在中間插入一天時，最後一天的內容不會消失', () => {
+  const app = [mkDay({ date: '10/21', dest: 'A' }), mkDay({ date: '10/22', dest: 'B' }), mkDay({ date: '10/23', dest: 'C' })];
+  const sheet = ['A', 'X', 'B', 'C'].map((dest, i) => ({
+    date: '10/2' + (1 + i), dest, trans: 'T', stay: 'S', note: 'N', url: 'U',
+  }));
+  itinerary = JSON.parse(JSON.stringify(app));
+  applyFn(diffFn(sheet, itinerary));
+  assert.deepStrictEqual(itinerary.map(d => d.dest), ['A', 'X', 'B', 'C'],
+    '插入一天時被擠到最後的內容不該消失');
+});
+
+check('差異視窗：多出天數時會提示不勾選的後果', () => {
+  sheetDiffs = [{ kind: 'add', date: '11/05', day: { dest: 'X' }, checked: true }];
+  renderFn(noSkips);
+  assert.ok(diffHtml().includes('多了 1 天'), '應告知多了幾天');
+  assert.ok(diffHtml().includes('內容會消失'), '應說明取消勾選的後果');
 });
 
 check('差異視窗：略過、重複、missing 都會提示', () => {

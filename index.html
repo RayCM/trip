@@ -807,13 +807,17 @@ function parseCsv(text){
  return rows;
 }
 // CSV 二維陣列 → day 物件。第一列是標題，依標題文字找欄位，欄位順序改變也不會錯位。
+const SHEET_COLS=[['date','日期'],['dest','目的地'],['trans','詳細交通與行程細節'],
+ ['stay','住宿地點'],['note','備註'],['url','訂票網址']];
 function sheetRowsToDays(rows){
- const days=[],skipped=[],duplicates=[],seen={};
- if(!rows.length)return{days,skipped,duplicates};
+ const days=[],skipped=[],duplicates=[],missingCols=[],seen={};
+ if(!rows.length)return{days,skipped,duplicates,missingCols:SHEET_COLS.map(c=>c[1])};
  const head=rows[0].map(h=>String(h||'').trim());
- const col=name=>head.indexOf(name);
- const idx={date:col('日期'),dest:col('目的地'),trans:col('詳細交通與行程細節'),
-  stay:col('住宿地點'),note:col('備註'),url:col('訂票網址')};
+ const idx={};
+ // 欄位找不到時不能當成空值——那會對每一天產生一筆「清空」差異且預設勾選，整欄被抹掉。
+ // 抓不到欄位多半代表標題被改名，或根本沒拿到 CSV（試算表被改成私人時 Google 回的是 HTML）。
+ SHEET_COLS.forEach(([k,name])=>{idx[k]=head.indexOf(name);if(idx[k]<0)missingCols.push(name);});
+ if(missingCols.length)return{days,skipped,duplicates,missingCols};
  const val=(row,k)=>idx[k]<0?'':String(row[idx[k]]||'').trim();
  rows.slice(1).forEach((row,i)=>{
   if(!row.some(c=>String(c||'').trim()))return; // 整列空白，忽略
@@ -825,7 +829,7 @@ function sheetRowsToDays(rows){
   if(date in seen){days[seen[date]]=day;duplicates.push(date);} // 重複日期以最後一列為準
   else{seen[date]=days.length;days.push(day);}
  });
- return{days,skipped,duplicates};
+ return{days,skipped,duplicates,missingCols};
 }
 const SHEET_FIELDS=[['dest','目的地'],['trans','交通與行程'],['stay','住宿'],['note','備註'],['url','訂票網址']];
 // 比對試算表與目前行程，回傳差異清單。app 端的值可能是舊的 {zh,en,ja} 物件，一律用 t() 取中文比。
@@ -834,7 +838,10 @@ function diffSheet(sheetDays,list){
  list.forEach((d,i)=>{byDate[d.date]=i;});
  sheetDays.forEach(sd=>{
   const i=byDate[sd.date];
-  if(i===undefined){diffs.push({kind:'add',date:sd.date,day:sd,checked:false});return;}
+  // 新增天預設勾選：試算表若在中間插入一天，後面每天的內容都會往後位移一格（都是 change、
+  // 預設勾選），被擠到最後的那天則是 add。不勾它就會讓最後一天的內容靜默消失。
+  // 多出一天很容易刪掉，內容不見了救不回來。
+  if(i===undefined){diffs.push({kind:'add',date:sd.date,day:sd,checked:true});return;}
   SHEET_FIELDS.forEach(([f])=>{
    const from=t(list[i][f]),to=sd[f];
    if(from!==to)diffs.push({kind:'change',date:sd.date,field:f,from,to,checked:true});
@@ -847,20 +854,30 @@ function diffSheet(sheetDays,list){
 // 套用被勾選的差異。missing 只是告知，不刪除任何一天。
 function applySheetDiff(diffs){
  const byDate={};itinerary.forEach((d,i)=>{byDate[d.date]=i;});
+ let stale=0;
  diffs.filter(x=>x.kind==='change'&&x.checked).forEach(x=>{
   const i=byDate[x.date];if(i===undefined)return;
   const day=itinerary[i];
-  if(x.field==='url'&&t(day.url)!==x.to)delete day.ulabel; // 網址換了，舊按鈕文字會誤導
+  // 差異是開視窗當下算的。若這期間同行者改了同一格（Firebase 即時同步會換掉 itinerary），
+  // 直接覆蓋會把畫面上從未顯示過的值無聲蓋掉，所以值對不上就跳過。
+  if(t(day[x.field])!==x.from){stale++;return;}
+  if(x.field==='url')delete day.ulabel; // 網址換了，舊按鈕文字會誤導
+  // 舊資料的住宿是 {zh,url} 物件，覆蓋成字串前先把地圖連結升級成頂層欄位，否則連結會消失
+  if(x.field==='stay'&&day.stay&&typeof day.stay==='object'&&day.stay.url&&!day.stayUrl)day.stayUrl=day.stay.url;
   if(x.to)day[x.field]=x.to; else delete day[x.field];
  });
  diffs.filter(x=>x.kind==='add'&&x.checked).forEach(x=>{
+  if(x.date in byDate)return; // 同一份差異被套用兩次時不要再加一天
   const day={};Object.keys(x.day).forEach(k=>{if(x.day[k])day[k]=x.day[k];});
   day.r='persimmon';
+  byDate[x.date]=itinerary.length;
   itinerary.push(day);
  });
  // 新增的天是 push 到最後的，若插的是中間某天，不先排序 resequenceDates() 會把它當成最後一天
+ // MM/DD 補零過，字串排序等同日期排序（跨年行程會壞，但 parseMD 的年份也寫死 2026，本來就不支援）
  itinerary.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
  resequenceDates();
+ return{stale};
 }
 // checkbox 用 inline onchange，需要能存取差異清單，與 editingIndex 同一種作法
 let sheetDiffs=[];
@@ -870,6 +887,7 @@ async function openSheetImport(){
  btn.disabled=true;btn.textContent='讀取中…';
  try{
   const parsed=sheetRowsToDays(parseCsv(await fetchSheet()));
+  if(parsed.missingCols.length)throw new Error('試算表找不到這些欄位：'+parsed.missingCols.join('、'));
   sheetDiffs=diffSheet(parsed.days,itinerary);
   renderSheetDiff(parsed);
   document.getElementById('sheet-modal').classList.add('on');
@@ -885,13 +903,15 @@ function renderSheetDiff(parsed){
  const notes=[];
  if(parsed.skipped.length)notes.push('第 '+parsed.skipped.join('、')+' 列的日期無法解析，已略過。');
  if(parsed.duplicates.length)notes.push('試算表有重複日期（'+parsed.duplicates.join('、')+'），以最後一列為準。');
+ const adds=sheetDiffs.filter(x=>x.kind==='add').length;
+ if(adds)notes.push('試算表比行程多了 '+adds+' 天。若取消勾選「新增這天」，被擠到最後的內容會消失，請留意。');
  sheetDiffs.filter(x=>x.kind==='missing').forEach(x=>notes.push('試算表沒有 '+x.date+' 這天，行程中的這天不會被刪除。'));
  // 用 sheetDiffs 的真實索引，不要用過濾後陣列的索引——checkbox 是寫回 sheetDiffs[i]，錯位會靜默改到別的項目
  const rows=sheetDiffs.map((x,i)=>{
   if(x.kind==='missing')return '';
   const body=x.kind==='add'
    ? `<div class="diff-head">${esc(x.date)}　新增這天</div><div class="diff-to">${esc(x.day.dest||'(無目的地)')}</div>`
-   : `<div class="diff-head">${esc(x.date)}　${DIFF_LABEL[x.field]||x.field}</div>
+   : `<div class="diff-head">${esc(x.date)}　${esc(DIFF_LABEL[x.field]||x.field)}</div>
       ${x.from?`<div class="diff-from">${esc(x.from)}</div>`:''}
       <div class="diff-to">${x.to?esc(x.to):'（清空）'}</div>`;
   return `<div class="diff-item">
@@ -906,9 +926,17 @@ function renderSheetDiff(parsed){
 }
 function closeSheetImport(){document.getElementById('sheet-modal').classList.remove('on');sheetDiffs=[];}
 async function confirmSheetImport(){
- applySheetDiff(sheetDiffs);
- await pushField('itinerary',itinerary);
- closeSheetImport();renderTimeline();
+ const btn=document.getElementById('sheet-apply');
+ if(btn.disabled)return; // 弱網時 pushField 會掛很久，避免重複按造成重複套用
+ btn.disabled=true;btn.textContent='套用中…';
+ try{
+  const r=applySheetDiff(sheetDiffs);
+  await pushField('itinerary',itinerary);
+  closeSheetImport();renderTimeline();
+  if(r.stale)alert('有 '+r.stale+' 項因為資料在這段期間被更新過而略過，沒有覆蓋。請重新按一次「從試算表更新」。');
+ }finally{
+  btn.disabled=false;btn.textContent='套用';
+ }
 }
 
 function openDayForm(i){

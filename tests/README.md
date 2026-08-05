@@ -24,10 +24,10 @@ sh tests/run-all.sh
 | `test-dayform.js` | 12 | `openDayForm()` / `saveDayForm()`：日期欄位唯讀的四種情境、驗證失敗時不寫回也不關視窗 |
 | `test-legacy.js` | 7 | 線上舊資料相容性：`t()` 讀得懂 `{zh,en,ja}` 物件、會被誤讀的日期格式必須被擋下 |
 | `test-render.js` | 14 | 用 DOM stub 實際執行整段主 script 與 `renderAll()`，檢查三個分頁的渲染輸出 |
-| `test-sheet-import.js` | 41 | CSV 解析、列轉換、差異計算、套用差異、差異視窗渲染 |
-| `test-sheet-e2e.js` | 7 | 用真實試算表 fixture 跑完整條匯入流程，含冪等性 |
+| `test-sheet-import.js` | 51 | CSV 解析、列轉換、差異計算、套用差異、差異視窗渲染 |
+| `test-sheet-e2e.js` | 8 | 用真實試算表 fixture 跑完整條匯入流程，含冪等性 |
 
-共 112 項。
+共 123 項。
 
 ## 中文字串快照
 

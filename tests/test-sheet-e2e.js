@@ -21,6 +21,7 @@ const FN = eval([
   grab(/function parseMD\(str\)\{[\s\S]*?\n\}/, 'parseMD()'),
   grab(/function resequenceDates\(\)\{[\s\S]*?\n\}/, 'resequenceDates()'),
   grab(/function parseCsv\(text\)\{[\s\S]*?\n\}/, 'parseCsv()'),
+  grab(/const SHEET_COLS=[[\s\S]*?\];/, 'SHEET_COLS'),
   grab(/function sheetRowsToDays\(rows\)\{[\s\S]*?\n\}/, 'sheetRowsToDays()'),
   grab(/const SHEET_FIELDS=[^\n]*/, 'SHEET_FIELDS'),
   grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
@@ -67,7 +68,7 @@ check('全部套用後，行程內容與試算表一致', () => {
   });
 });
 
-check('套用後 app 獨有欄位仍在（leaf / r / stayUrl）', () => {
+check('套用後 app 獨有欄位仍在（leaf / r）', () => {
   itinerary = JSON.parse(JSON.stringify(FN.DEFAULT_DAYS));
   const before = itinerary.map(d => ({ leaf: !!d.leaf, r: d.r }));
   FN.applySheetDiff(FN.diffSheet(parsed.days, itinerary));
@@ -75,7 +76,21 @@ check('套用後 app 獨有欄位仍在（leaf / r / stayUrl）', () => {
     assert.strictEqual(!!d.leaf, before[i].leaf, `第 ${i + 1} 天的 leaf 被改掉了`);
     assert.strictEqual(d.r, before[i].r, `第 ${i + 1} 天的 r 被改掉了`);
   });
-  assert.ok(itinerary[0].stay, '住宿不該消失');
+});
+
+check('套用後住宿的 Google Maps 連結一個都沒少', () => {
+  // DEFAULT_DAYS 的 stay 是 {zh,url} 物件，覆蓋成字串會讓連結消失（實測會掉 10 個）
+  itinerary = JSON.parse(JSON.stringify(FN.DEFAULT_DAYS));
+  const linkOf = d => d.stayUrl || (d.stay && typeof d.stay === 'object' ? d.stay.url : '') || '';
+  const before = itinerary.map(d => ({ date: d.date, url: linkOf(d) }));
+  const hadLink = before.filter(b => b.url).length;
+  assert.ok(hadLink >= 14, '前提檢查：預設資料至少要有 14 天帶連結，實際 ' + hadLink);
+
+  FN.applySheetDiff(FN.diffSheet(parsed.days, itinerary));
+
+  const lost = [];
+  itinerary.forEach((d, i) => { if (before[i].url && linkOf(d) !== before[i].url) lost.push(before[i].date); });
+  assert.deepStrictEqual(lost, [], '這些天的地圖連結不見了: ' + lost.join('、'));
 });
 
 check('套用後日期仍是連續的 10/21–11/04', () => {
