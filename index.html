@@ -753,6 +753,26 @@ function isValidAnchorDate(s){
  const d=new Date(2026,+m[1]-1,+m[2]);
  return d.getMonth()===+m[1]-1&&d.getDate()===+m[2]; // 月日能原樣還原才算合法，擋掉 02/30 這種會靜默進位的值
 }
+/* ===== 從 Google 試算表匯入 ===== */
+// 儲存格可能含逗號與換行（例如多行的備註），不能用 split 處理
+function parseCsv(text){
+ const rows=[];let row=[],cell='',q=false;
+ for(let i=0;i<text.length;i++){
+  const c=text[i];
+  if(q){
+   if(c!=='"'){cell+=c;}
+   else if(text[i+1]==='"'){cell+='"';i++;} // "" 是跳脫的雙引號
+   else q=false;
+  }
+  else if(c==='"')q=true;
+  else if(c===','){row.push(cell);cell='';}
+  else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';}
+  else if(c!=='\r')cell+=c;
+ }
+ if(cell!==''||row.length){row.push(cell);rows.push(row);}
+ return rows;
+}
+
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;
  const d=editingIndex!=null?itinerary[editingIndex]:{r:'persimmon'};
