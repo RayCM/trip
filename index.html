@@ -763,7 +763,7 @@ function openDayForm(i){
  dateEl.readOnly=!dateEditable;
  document.getElementById('m-date-hint').style.display=dateEditable?'none':'block';
  const rsel=document.getElementById('m-region');
- rsel.innerHTML=REGION_OPTS.map((o,k)=>`<option value="${o.key}">${UI.regions[LANG][k]}</option>`).join('');
+ rsel.innerHTML=REGION_OPTS.map((o,k)=>`<option value="${o.key}">${UI.regions[k]}</option>`).join('');
  rsel.value=d.r||'persimmon';
  document.getElementById('m-dest').value=t(d.dest);
  document.getElementById('m-trans').value=t(d.trans);
@@ -955,14 +955,14 @@ function applyStatic(){
  document.getElementById('eyebrow').textContent=t(UI.eyebrow);
  document.getElementById('title-a').textContent=t(UI.titleA);
  document.getElementById('title-b').textContent=t(UI.titleB);
- document.getElementById('route').innerHTML=UI.route[LANG].map((label,i)=>{
+ document.getElementById('route').innerHTML=UI.route.map((label,i)=>{
   const colors=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)','var(--persimmon)'];
   return `<span class="seg"><i class="dot" style="background:${colors[i]}"></i>${label}</span>`+(i<4?'<span class="arr">→</span>':'');
  }).join('');
  document.getElementById('tab-trip').textContent=t(UI.tabTrip);
  document.getElementById('tab-exp').textContent=t(UI.tabExp);
  document.getElementById('tab-todo').textContent=t(UI.tabTodo);
- const rk=UI.regionKey[LANG],rc=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)'];
+ const rk=UI.regionKey,rc=['var(--persimmon)','var(--slate)','var(--cedar)','var(--hida)'];
  document.getElementById('region-key').innerHTML=rk.map((label,i)=> i<4?`<span><i style="background:${rc[i]}"></i>${label}</span>`:`<span><svg style="width:13px;height:13px;color:var(--momiji)"><use href="#momiji"/></svg>${label}</span>`).join('');
  document.getElementById('exp-cap').textContent=t(UI.expCap);
  document.getElementById('lbl-jpy').textContent=t(UI.lblJpy);
