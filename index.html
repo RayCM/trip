@@ -423,10 +423,9 @@ function applySnapshot(d){
 function clone(x){return JSON.parse(JSON.stringify(x));}
 
 /* ===== i18n ===== */
-let LANG='zh';
-const t=o=>o==null?'':(typeof o==='string'?o:(o[LANG]||o.zh||''));
+// Firebase 上的舊資料仍是 {zh,en,ja} 物件，因此保留讀 o.zh 的能力
+const t=o=>o==null?'':(typeof o==='string'?o:(o.zh||''));
 const WD=['一','二','三','四','五','六','日'];
-const HTMLLANG={zh:'zh-Hant',en:'en',ja:'ja'};
 
 const UI={
  eyebrow:'2026 ‧ 紅葉之旅',
@@ -503,14 +502,11 @@ const UI={
  perEach:'每人均攤'
 };
 function cd(n){
- const L={zh:{l:'剩 '+n+' 天',t:'明天',td:'今天！',o:'已過 '+(-n)+' 天'},en:{l:n+' days left',t:'Tomorrow',td:'Today!',o:n===-1?'1 day ago':(-n)+' days ago'},ja:{l:'残り '+n+' 日',t:'明日',td:'本日！',o:(-n)+'日経過'}}[LANG];
+ const L={l:'剩 '+n+' 天',t:'明天',td:'今天！',o:'已過 '+(-n)+' 天'};
  if(n>1)return{cls:'cd-ok',txt:L.l};if(n===1)return{cls:'cd-soon',txt:L.t};if(n===0)return{cls:'cd-soon',txt:L.td};return{cls:'cd-over',txt:L.o};
 }
 function seedSubHtml(twd){
- const T={zh:`依官網最新票價估算 17 段交通，合計約 <b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。可一鍵填入下方記帳，再依實際金額修改或刪除。`,
- en:`Estimated from the latest official fares across 17 legs — about <b>¥${fmt(SEED_TOTAL)}</b> (≈ NT$${twd}). Add them to your log in one tap, then edit or delete to match actual costs.`,
- ja:`公式の最新運賃をもとに17区間を概算、合計 約<b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。ワンタップで下の家計簿に追加、実額に合わせて編集・削除できます。`};
- return T[LANG];
+ return `依官網最新票價估算 17 段交通，合計約 <b>¥${fmt(SEED_TOTAL)}</b>（≈ NT$${twd}）。可一鍵填入下方記帳，再依實際金額修改或刪除。`;
 }
 
 /* ===== data ===== */
@@ -949,9 +945,9 @@ function renderTodos(){
  }).join('');
 }
 
-/* ===== language ===== */
+/* ===== static text ===== */
 function applyStatic(){
- document.documentElement.lang=HTMLLANG[LANG];
+ document.documentElement.lang='zh-Hant';
  document.getElementById('eyebrow').textContent=t(UI.eyebrow);
  document.getElementById('title-a').textContent=t(UI.titleA);
  document.getElementById('title-b').textContent=t(UI.titleB);
@@ -988,7 +984,6 @@ function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpens
 
 /* ===== init ===== */
 (function init(){
- LANG='zh';
  document.getElementById('e-date').value=new Date().toISOString().slice(0,10);
  document.getElementById('rate').addEventListener('input',async e=>{rate=parseFloat(e.target.value)||0;await pushField('settings',{rate});renderExpenses();updateSeed();});
  renderAll(); // 先畫出介面（資料稍後載入）
