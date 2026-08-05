@@ -214,6 +214,18 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
 .add-day{width:100%;margin-top:4px;appearance:none;border:1.5px dashed var(--cedar);background:#f3f6f1;cursor:pointer;font-family:var(--sans);font-size:14.5px;font-weight:700;color:var(--cedar);padding:13px;border-radius:12px;transition:.15s}
 .add-day:hover{background:#ebf1e8}
 .add-day:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+.sheet-btn{width:100%;margin-top:8px;appearance:none;border:1.5px dashed var(--slate);background:#eef2f5;cursor:pointer;font-family:var(--sans);font-size:14.5px;font-weight:700;color:var(--slate);padding:13px;border-radius:12px;transition:.15s}
+.sheet-btn:hover{background:#e4eaef}
+.sheet-btn:disabled{opacity:.55;cursor:default}
+.sheet-btn:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+.diff-list{max-height:52vh;overflow-y:auto;margin:4px 0 14px}
+.diff-item{display:flex;gap:9px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--line)}
+.diff-item:last-child{border-bottom:none}
+.diff-body{flex:1;min-width:0}
+.diff-head{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:3px}
+.diff-from{font-size:12.5px;color:var(--ink-faint);text-decoration:line-through;word-break:break-word}
+.diff-to{font-size:12.5px;color:var(--ink);word-break:break-word}
+.diff-note{font-size:12px;color:var(--ink-faint);padding:7px 0}
 
 .modal{position:fixed;inset:0;z-index:100;display:none;align-items:flex-start;justify-content:center;background:rgba(36,31,25,.5);backdrop-filter:blur(3px);overflow-y:auto;padding:24px 14px}
 .modal.on{display:flex}
@@ -274,6 +286,7 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
     <div class="region-key" id="region-key"></div>
     <div class="timeline" id="timeline"></div>
     <button class="add-day" id="add-day" onclick="openDayForm()" style="display:none"></button>
+    <button class="sheet-btn" id="sheet-import" onclick="openSheetImport()" style="display:none">⇩ 從試算表更新</button>
   </section>
 
   <section class="panel" id="p-exp" role="tabpanel" aria-labelledby="tab-exp">
@@ -366,6 +379,17 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
       <button class="m-btn save" id="m-save" onclick="saveDayForm()"></button>
     </div>
     <button class="m-btn del" id="m-del" onclick="delDayFromForm()" style="display:none"></button>
+  </div>
+</div>
+
+<div class="modal" id="sheet-modal">
+  <div class="modal-card">
+    <h3>從試算表更新</h3>
+    <div class="diff-list" id="diff-list"></div>
+    <div class="m-actions">
+      <button class="m-btn cancel" onclick="closeSheetImport()">取消</button>
+      <button class="m-btn save" id="sheet-apply" onclick="confirmSheetImport()">套用</button>
+    </div>
   </div>
 </div>
 
@@ -711,6 +735,7 @@ function renderTimeline(){
  document.getElementById('edit-toggle').classList.toggle('on',editMode);
  document.getElementById('add-day').style.display=editMode?'block':'none';
  document.getElementById('add-day').textContent=t(UI.addDay);
+ document.getElementById('sheet-import').style.display=editMode?'block':'none';
 }
 
 /* ===== itinerary editing ===== */
@@ -753,6 +778,167 @@ function isValidAnchorDate(s){
  const d=new Date(2026,+m[1]-1,+m[2]);
  return d.getMonth()===+m[1]-1&&d.getDate()===+m[2]; // 月日能原樣還原才算合法，擋掉 02/30 這種會靜默進位的值
 }
+/* ===== 從 Google 試算表匯入 ===== */
+// 公開連結的試算表，用 CSV 匯出端點；Google 有回 CORS 標頭，瀏覽器可直接抓
+const SHEET_ID='1JkPtZ1lH585Dclw7pWVbMvl5XLZZ1Y8sGx_jZSNabTw';
+const SHEET_GID='78477160';
+const SHEET_URL='https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid='+SHEET_GID;
+async function fetchSheet(){
+ const res=await fetch(SHEET_URL,{cache:'no-store'});
+ if(!res.ok)throw new Error('HTTP '+res.status);
+ return res.text();
+}
+// 儲存格可能含逗號與換行（例如多行的備註），不能用 split 處理
+function parseCsv(text){
+ const rows=[];let row=[],cell='',q=false;
+ for(let i=0;i<text.length;i++){
+  const c=text[i];
+  if(q){
+   if(c!=='"'){cell+=c;}
+   else if(text[i+1]==='"'){cell+='"';i++;} // "" 是跳脫的雙引號
+   else q=false;
+  }
+  else if(c==='"')q=true;
+  else if(c===','){row.push(cell);cell='';}
+  else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell='';}
+  else if(c!=='\r')cell+=c;
+ }
+ if(cell!==''||row.length){row.push(cell);rows.push(row);}
+ return rows;
+}
+// CSV 二維陣列 → day 物件。第一列是標題，依標題文字找欄位，欄位順序改變也不會錯位。
+const SHEET_COLS=[['date','日期'],['dest','目的地'],['trans','詳細交通與行程細節'],
+ ['stay','住宿地點'],['note','備註'],['url','訂票網址']];
+function sheetRowsToDays(rows){
+ const days=[],skipped=[],duplicates=[],missingCols=[],seen={};
+ if(!rows.length)return{days,skipped,duplicates,missingCols:SHEET_COLS.map(c=>c[1])};
+ const head=rows[0].map(h=>String(h||'').trim());
+ const idx={};
+ // 欄位找不到時不能當成空值——那會對每一天產生一筆「清空」差異且預設勾選，整欄被抹掉。
+ // 抓不到欄位多半代表標題被改名，或根本沒拿到 CSV（試算表被改成私人時 Google 回的是 HTML）。
+ SHEET_COLS.forEach(([k,name])=>{idx[k]=head.indexOf(name);if(idx[k]<0)missingCols.push(name);});
+ if(missingCols.length)return{days,skipped,duplicates,missingCols};
+ const val=(row,k)=>idx[k]<0?'':String(row[idx[k]]||'').trim();
+ rows.slice(1).forEach((row,i)=>{
+  if(!row.some(c=>String(c||'').trim()))return; // 整列空白，忽略
+  const d=parseMD(val(row,'date'));
+  if(!d){skipped.push(i+2);return;} // +2：跳過標題列且轉成 1-based
+  const date=String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
+  const day={date,dest:val(row,'dest'),trans:val(row,'trans'),
+   stay:val(row,'stay'),note:val(row,'note'),url:val(row,'url')};
+  if(date in seen){days[seen[date]]=day;duplicates.push(date);} // 重複日期以最後一列為準
+  else{seen[date]=days.length;days.push(day);}
+ });
+ return{days,skipped,duplicates,missingCols};
+}
+const SHEET_FIELDS=[['dest','目的地'],['trans','交通與行程'],['stay','住宿'],['note','備註'],['url','訂票網址']];
+// 比對試算表與目前行程，回傳差異清單。app 端的值可能是舊的 {zh,en,ja} 物件，一律用 t() 取中文比。
+function diffSheet(sheetDays,list){
+ const diffs=[],byDate={};
+ list.forEach((d,i)=>{byDate[d.date]=i;});
+ sheetDays.forEach(sd=>{
+  const i=byDate[sd.date];
+  // 新增天預設勾選：試算表若在中間插入一天，後面每天的內容都會往後位移一格（都是 change、
+  // 預設勾選），被擠到最後的那天則是 add。不勾它就會讓最後一天的內容靜默消失。
+  // 多出一天很容易刪掉，內容不見了救不回來。
+  if(i===undefined){diffs.push({kind:'add',date:sd.date,day:sd,checked:true});return;}
+  SHEET_FIELDS.forEach(([f])=>{
+   const from=t(list[i][f]),to=sd[f];
+   if(from!==to)diffs.push({kind:'change',date:sd.date,field:f,from,to,checked:true});
+  });
+ });
+ const sheetDates={};sheetDays.forEach(d=>{sheetDates[d.date]=true;});
+ list.forEach(d=>{if(!sheetDates[d.date])diffs.push({kind:'missing',date:d.date});});
+ return diffs;
+}
+// 套用被勾選的差異。missing 只是告知，不刪除任何一天。
+function applySheetDiff(diffs){
+ const byDate={};itinerary.forEach((d,i)=>{byDate[d.date]=i;});
+ let stale=0;
+ diffs.filter(x=>x.kind==='change'&&x.checked).forEach(x=>{
+  const i=byDate[x.date];if(i===undefined)return;
+  const day=itinerary[i];
+  // 差異是開視窗當下算的。若這期間同行者改了同一格（Firebase 即時同步會換掉 itinerary），
+  // 直接覆蓋會把畫面上從未顯示過的值無聲蓋掉，所以值對不上就跳過。
+  if(t(day[x.field])!==x.from){stale++;return;}
+  if(x.field==='url')delete day.ulabel; // 網址換了，舊按鈕文字會誤導
+  // 舊資料的住宿是 {zh,url} 物件，覆蓋成字串前先把地圖連結升級成頂層欄位，否則連結會消失
+  if(x.field==='stay'&&day.stay&&typeof day.stay==='object'&&day.stay.url&&!day.stayUrl)day.stayUrl=day.stay.url;
+  if(x.to)day[x.field]=x.to; else delete day[x.field];
+ });
+ diffs.filter(x=>x.kind==='add'&&x.checked).forEach(x=>{
+  if(x.date in byDate)return; // 同一份差異被套用兩次時不要再加一天
+  const day={};Object.keys(x.day).forEach(k=>{if(x.day[k])day[k]=x.day[k];});
+  day.r='persimmon';
+  byDate[x.date]=itinerary.length;
+  itinerary.push(day);
+ });
+ // 新增的天是 push 到最後的，若插的是中間某天，不先排序 resequenceDates() 會把它當成最後一天
+ // MM/DD 補零過，字串排序等同日期排序（跨年行程會壞，但 parseMD 的年份也寫死 2026，本來就不支援）
+ itinerary.sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ resequenceDates();
+ return{stale};
+}
+// checkbox 用 inline onchange，需要能存取差異清單，與 editingIndex 同一種作法
+let sheetDiffs=[];
+const DIFF_LABEL={dest:'目的地',trans:'交通與行程',stay:'住宿',note:'備註',url:'訂票網址'};
+async function openSheetImport(){
+ const btn=document.getElementById('sheet-import');
+ btn.disabled=true;btn.textContent='讀取中…';
+ try{
+  const parsed=sheetRowsToDays(parseCsv(await fetchSheet()));
+  if(parsed.missingCols.length)throw new Error('試算表找不到這些欄位：'+parsed.missingCols.join('、'));
+  sheetDiffs=diffSheet(parsed.days,itinerary);
+  renderSheetDiff(parsed);
+  document.getElementById('sheet-modal').classList.add('on');
+ }catch(e){
+  console.error('讀取試算表失敗',e);
+  alert('讀取試算表失敗：'+e.message+'\n\n請確認網路連線，以及試算表仍設為「知道連結的人皆可檢視」。行程資料未變動。');
+ }finally{
+  btn.disabled=false;btn.textContent='⇩ 從試算表更新';
+ }
+}
+function renderSheetDiff(parsed){
+ const changes=sheetDiffs.filter(x=>x.kind!=='missing');
+ const notes=[];
+ if(parsed.skipped.length)notes.push('第 '+parsed.skipped.join('、')+' 列的日期無法解析，已略過。');
+ if(parsed.duplicates.length)notes.push('試算表有重複日期（'+parsed.duplicates.join('、')+'），以最後一列為準。');
+ const adds=sheetDiffs.filter(x=>x.kind==='add').length;
+ if(adds)notes.push('試算表比行程多了 '+adds+' 天。若取消勾選「新增這天」，被擠到最後的內容會消失，請留意。');
+ sheetDiffs.filter(x=>x.kind==='missing').forEach(x=>notes.push('試算表沒有 '+x.date+' 這天，行程中的這天不會被刪除。'));
+ // 用 sheetDiffs 的真實索引，不要用過濾後陣列的索引——checkbox 是寫回 sheetDiffs[i]，錯位會靜默改到別的項目
+ const rows=sheetDiffs.map((x,i)=>{
+  if(x.kind==='missing')return '';
+  const body=x.kind==='add'
+   ? `<div class="diff-head">${esc(x.date)}　新增這天</div><div class="diff-to">${esc(x.day.dest||'(無目的地)')}</div>`
+   : `<div class="diff-head">${esc(x.date)}　${esc(DIFF_LABEL[x.field]||x.field)}</div>
+      ${x.from?`<div class="diff-from">${esc(x.from)}</div>`:''}
+      <div class="diff-to">${x.to?esc(x.to):'（清空）'}</div>`;
+  return `<div class="diff-item">
+   <input type="checkbox" id="diff-${i}" ${x.checked?'checked':''} onchange="sheetDiffs[${i}].checked=this.checked">
+   <label class="diff-body" for="diff-${i}">${body}</label>
+  </div>`;
+ }).join('');
+ const noteHtml=notes.map(n=>`<div class="diff-note">${esc(n)}</div>`).join('');
+ document.getElementById('diff-list').innerHTML=
+  (changes.length?rows:'<div class="diff-note">試算表與目前行程一致，沒有需要更新的內容。</div>')+noteHtml;
+ document.getElementById('sheet-apply').style.display=changes.length?'block':'none';
+}
+function closeSheetImport(){document.getElementById('sheet-modal').classList.remove('on');sheetDiffs=[];}
+async function confirmSheetImport(){
+ const btn=document.getElementById('sheet-apply');
+ if(btn.disabled)return; // 弱網時 pushField 會掛很久，避免重複按造成重複套用
+ btn.disabled=true;btn.textContent='套用中…';
+ try{
+  const r=applySheetDiff(sheetDiffs);
+  await pushField('itinerary',itinerary);
+  closeSheetImport();renderTimeline();
+  if(r.stale)alert('有 '+r.stale+' 項因為資料在這段期間被更新過而略過，沒有覆蓋。請重新按一次「從試算表更新」。');
+ }finally{
+  btn.disabled=false;btn.textContent='套用';
+ }
+}
+
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;
  const d=editingIndex!=null?itinerary[editingIndex]:{r:'persimmon'};
