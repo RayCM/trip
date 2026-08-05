@@ -732,12 +732,16 @@ function resequenceDates(){
 }
 function moveDay(i,dir){
  const j=i+dir;if(j<0||j>=itinerary.length)return;
- const a=itinerary;[a[i],a[j]]=[a[j],a[i]];
+ // 交換的是內容，日期留在原本的位置上（第 1 天是錨點，尤其不能被換走）
+ const a=itinerary;const di=a[i].date,dj=a[j].date;[a[i],a[j]]=[a[j],a[i]];a[i].date=di;a[j].date=dj;
+ // 日期已經釘住不隨內容移動，這裡呼叫是順手把資料庫裡可能因舊版程式或其他 bug
+ // 而變得不連續的資料一併整理回連續狀態（自我修復，跟 delete d.wd 的收斂哲學一致）
+ resequenceDates();
  pushField('itinerary',itinerary);renderTimeline();
 }
 async function deleteDay(i){
  if(!confirm(t(UI.confirmDel)))return;
- itinerary.splice(i,1);await pushField('itinerary',itinerary);renderTimeline();
+ itinerary.splice(i,1);resequenceDates();await pushField('itinerary',itinerary);renderTimeline();
 }
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;
@@ -784,12 +788,13 @@ async function saveDayForm(){
  if(!day.stayUrl)delete day.stayUrl;
  if(!day.url){delete day.url;delete day.ulabel;}
  if(editingIndex!=null)itinerary[editingIndex]=day; else itinerary.push(day);
+ resequenceDates();
  await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
 }
 async function delDayFromForm(){
  if(editingIndex==null)return;
  if(!confirm(t(UI.confirmDel)))return;
- itinerary.splice(editingIndex,1);await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
+ itinerary.splice(editingIndex,1);resequenceDates();await pushField('itinerary',itinerary);closeDayForm();renderTimeline();
 }
 
 /* ===== expenses ===== */
