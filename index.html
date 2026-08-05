@@ -224,6 +224,9 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
 .m-grid label{font-size:11px;font-weight:700;color:var(--ink-faint);letter-spacing:.04em}
 .m-grid input,.m-grid select,.m-grid textarea{font-family:var(--sans);font-size:14px;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--card);width:100%;resize:vertical}
 .m-grid input:focus,.m-grid select:focus,.m-grid textarea:focus{outline:2px solid var(--slate);outline-offset:0}
+.m-grid input[readonly]{background:#f2ede3;color:var(--ink-faint);cursor:default}
+.m-grid input[readonly]:focus{outline:none}
+.m-hint{font-size:10.5px;color:var(--ink-faint);letter-spacing:.03em;line-height:1.4}
 .m-check label{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
 .m-check input{width:18px;height:18px;accent-color:var(--momiji)}
 .m-actions{display:flex;gap:10px;margin-top:18px}
@@ -347,7 +350,7 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
   <div class="modal-card">
     <h3 id="m-title"></h3>
     <div class="m-grid">
-      <div class="field"><label id="ml-date" for="m-date"></label><input type="text" id="m-date" placeholder="10/26"></div>
+      <div class="field"><label id="ml-date" for="m-date"></label><input type="text" id="m-date" placeholder="10/26"><span class="m-hint" id="m-date-hint">日期依順序自動計算</span></div>
       <div class="field"><label id="ml-region" for="m-region"></label><select id="m-region"></select></div>
       <div class="field full"><label id="ml-dest" for="m-dest"></label><input type="text" id="m-dest"></div>
       <div class="field full"><label id="ml-trans" for="m-trans"></label><textarea id="m-trans" rows="3"></textarea></div>
@@ -721,7 +724,7 @@ function toggleEdit(){
 function resequenceDates(){
  if(!itinerary.length)return;
  const m=String(itinerary[0].date||'').match(/(\d{1,2})\D+(\d{1,2})/);
- if(!m)return;
+ if(!m){console.warn('第 1 天日期無法解析，日期自動接續已停用，請修正第 1 天的日期');return;}
  const base=new Date(2026,parseInt(m[1],10)-1,parseInt(m[2],10));
  if(isNaN(base))return;
  itinerary.forEach((d,i)=>{
@@ -743,11 +746,22 @@ async function deleteDay(i){
  if(!confirm(t(UI.confirmDel)))return;
  itinerary.splice(i,1);resequenceDates();await pushField('itinerary',itinerary);renderTimeline();
 }
+function isValidAnchorDate(s){
+ const m=String(s).trim().replace(/／/g,'/').match(/^(\d{1,2})\/(\d{1,2})$/);
+ if(!m)return false;
+ const d=new Date(2026,+m[1]-1,+m[2]);
+ return d.getMonth()===+m[1]-1&&d.getDate()===+m[2]; // 月日能原樣還原才算合法，擋掉 02/30 這種會靜默進位的值
+}
 function openDayForm(i){
  editingIndex=(typeof i==='number')?i:null;
  const d=editingIndex!=null?itinerary[editingIndex]:{r:'persimmon'};
  document.getElementById('m-title').textContent=editingIndex!=null?t(UI.mEditTitle):t(UI.mNewTitle);
- document.getElementById('m-date').value=d.date||'';
+ // 日期由第 1 天往後推算，只有錨點（第 1 天）可改；行程為空時新增的第一天也要能設錨點
+ const dateEl=document.getElementById('m-date');
+ const dateEditable=(editingIndex===0)||itinerary.length===0;
+ dateEl.value=d.date||'';
+ dateEl.readOnly=!dateEditable;
+ document.getElementById('m-date-hint').style.display=dateEditable?'none':'block';
  const rsel=document.getElementById('m-region');
  rsel.innerHTML=REGION_OPTS.map((o,k)=>`<option value="${o.key}">${UI.regions[LANG][k]}</option>`).join('');
  rsel.value=d.r||'persimmon';
@@ -781,6 +795,9 @@ async function saveDayForm(){
  const v=id=>document.getElementById(id).value.trim();
  const dest=v('m-dest');
  if(!v('m-date')&&!dest){closeDayForm();return;}
+ // 日期欄位可輸入時（第 1 天）它決定整趟行程，空白或格式錯了會把全部日期算歪
+ const dateEl=document.getElementById('m-date');
+ if(!dateEl.readOnly&&!isValidAnchorDate(v('m-date'))){alert('日期請填 MM/DD，例如 10/21');return;}
  const day={date:v('m-date'),r:document.getElementById('m-region').value,
   dest:dest,trans:v('m-trans'),stay:v('m-stay'),stayUrl:v('m-stayurl'),note:v('m-note'),
   url:v('m-url'),ulabel:v('m-ulabel'),leaf:document.getElementById('m-leaf').checked};
