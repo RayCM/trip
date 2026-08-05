@@ -669,12 +669,19 @@ function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 function fmt(n){return Math.round(n).toLocaleString('en-US');}
 
 /* ===== render: itinerary ===== */
-function wdFromDate(str){
+// 解析 MM/DD（也吃 10-21、10.21、10月21日 這些舊格式）。無法解析回傳 null。
+// 月日要能原樣還原才算數：'2026-10-21' 會從中間匹配成 26 月 10 日，Date 會滾成 2028-02-10
+// 而不是 Invalid Date，光靠 isNaN 擋不住，日期會被整串算歪。
+function parseMD(str){
  const m=String(str||'').match(/(\d{1,2})\D+(\d{1,2})/);
- if(!m)return 0;
- const d=new Date(2026,parseInt(m[1],10)-1,parseInt(m[2],10));
- if(isNaN(d))return 0;
- return (d.getDay()+6)%7; // Mon=0
+ if(!m)return null;
+ const mo=parseInt(m[1],10),da=parseInt(m[2],10);
+ const d=new Date(2026,mo-1,da);
+ return (d.getMonth()===mo-1&&d.getDate()===da)?d:null;
+}
+function wdFromDate(str){
+ const d=parseMD(str);
+ return d?(d.getDay()+6)%7:-1; // Mon=0，無法解析回 -1 讓呼叫端留白而非誤顯示成「一」
 }
 function renderTimeline(){
  document.getElementById('timeline').innerHTML=itinerary.map((d,i)=>{
@@ -694,7 +701,7 @@ function renderTimeline(){
   const stayHtml=stayUrl?`<a class="stay-link" href="${esc(stayUrl)}" target="_blank" rel="noopener">${stayTxt} ↗</a>`:stayTxt;
   return `<div class="day"><div class="node"><div class="num" style="background:${col}">${String(i+1).padStart(2,'0')}</div>${leaf}</div>
    <div class="card" style="border-left-color:${col}">
-    <div class="top"><span class="wd" style="background:${col}">${WD[wd]}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
+    <div class="top"><span class="wd" style="background:${col}">${WD[wd]||''}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
     <div class="row"><span class="lbl">${t(UI.rowTrans)}</span><span>${esc(t(d.trans))}</span></div>
     <div class="row"><span class="lbl">${t(UI.rowStay)}</span><span>${stayHtml}</span></div>
     ${noteRow}${link}${tools}
@@ -719,10 +726,8 @@ function toggleEdit(){
 }
 function resequenceDates(){
  if(!itinerary.length)return;
- const m=String(itinerary[0].date||'').match(/(\d{1,2})\D+(\d{1,2})/);
- if(!m){console.warn('第 1 天日期無法解析，日期自動接續已停用，請修正第 1 天的日期');return;}
- const base=new Date(2026,parseInt(m[1],10)-1,parseInt(m[2],10));
- if(isNaN(base))return;
+ const base=parseMD(itinerary[0].date);
+ if(!base){console.warn('第 1 天日期無法解析，日期自動接續已停用，請修正第 1 天的日期');return;}
  itinerary.forEach((d,i)=>{
   const cur=new Date(2026,base.getMonth(),base.getDate()+i);
   d.date=String(cur.getMonth()+1).padStart(2,'0')+'/'+String(cur.getDate()).padStart(2,'0');
