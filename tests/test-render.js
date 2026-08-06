@@ -184,11 +184,12 @@ check('記帳頁：交通預估說明文字正常且金額有算出來', () => {
   assert.ok(/¥[\d,]+/.test(sub), '預估說明沒有算出金額: ' + sub.slice(0, 120));
 });
 
-check('待辦頁：9 項待辦都是中文', () => {
+check('待辦頁：11 項待辦都是中文', () => {
   const td = html('todo-list');
-  ['立山黑部 早鳥票（官網）', 'JR 特急飛驒 3 號（名古屋→富山）', '馬籠・妻籠 VIP LINER 一日遊'].forEach(n =>
+  ['立山黑部 早鳥票（官網）', 'JR 特急飛驒 3 號（名古屋→富山）', '馬籠・妻籠 VIP LINER 一日遊',
+   '河口湖 JR 指定席（去回共三段）', '伊勢神宮 近鐵特急'].forEach(n =>
     assert.ok(td.includes(n), '待辦缺少 ' + n));
-  assert.strictEqual((td.match(/class="ti-ttl"/g) || []).length, 9, '待辦數不是 9');
+  assert.strictEqual((td.match(/class="ti-ttl"/g) || []).length, 11, '待辦數不是 11');
 });
 
 check('待辦頁：倒數文字是中文', () => {

@@ -322,7 +322,7 @@
    "time": "09:00",
    "url": "https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html",
    "title": "立山黑部 早鳥票（官網）",
-   "forDay": "10/26 立山黑部橫越"
+   "forDay": "10/25 立山黑部橫越"
   },
   {
    "id": "hida3",
@@ -338,15 +338,15 @@
    "time": "23:00",
    "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
    "title": "戶隱・善光寺 高速巴士",
-   "forDay": "10/27 戶隱奧社・善光寺"
+   "forDay": "10/26 戶隱奧社・善光寺"
   },
   {
    "id": "kamikochi",
-   "due": "2026-09-27",
+   "due": "2026-09-26",
    "time": "23:00",
    "url": "https://japanbusonline.com/zh-tw/DestinationSearch/1",
    "title": "上高地 直達巴士",
-   "forDay": "10/28 上高地"
+   "forDay": "10/27 上高地"
   },
   {
    "id": "mtTakayama",
@@ -355,6 +355,14 @@
    "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
    "title": "松本→高山 高速巴士",
    "forDay": "10/29 松本城"
+  },
+  {
+   "id": "fujiAzusa",
+   "due": "2026-09-28",
+   "time": "10:00",
+   "url": "https://www.eki-net.com/en/jreast-train-reservation/Top/Index",
+   "title": "河口湖 JR 指定席（去回共三段）",
+   "forDay": "10/28 新倉淺間神社・河口湖"
   },
   {
    "id": "shirakawa",
@@ -381,12 +389,20 @@
    "forDay": "11/01 回名古屋"
   },
   {
+   "id": "ise",
+   "due": "2026-10-02",
+   "time": "",
+   "url": "https://ars-kintetsutk.triplabo.com/home",
+   "title": "伊勢神宮 近鐵特急",
+   "forDay": "11/02 伊勢神宮內外宮"
+  },
+  {
    "id": "magome",
    "due": "2026-10-02",
    "time": "",
    "url": "https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/",
    "title": "馬籠・妻籠 VIP LINER 一日遊",
-   "forDay": "11/02 馬籠妻籠"
+   "forDay": "11/03 馬籠妻籠"
   }
  ],
  "CATS": [
