@@ -29,7 +29,7 @@ const FN = eval([
   grab(/const SHEET_COLS=[[\s\S]*?\];/, 'SHEET_COLS'),
   grab(/function sheetRowsToDays\(rows\)\{[\s\S]*?\n\}/, 'sheetRowsToDays()'),
   grab(/const SHEET_FIELDS=[^\n]*/, 'SHEET_FIELDS'),
-  grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
+  grab(/function diffSheet\(sheetDays,list,presentCols\)\{[\s\S]*?\n\}/, 'diffSheet()'),
   grab(/function resequenceDates\(\)\{[\s\S]*?\n\}/, 'resequenceDates()'),
   grab(/function applySheetDiff\(diffs\)\{[\s\S]*?\n\}/, 'applySheetDiff()'),
   grab(/function esc\(s\)\{[^\n]*\}/, 'esc()'),
@@ -219,6 +219,39 @@ check('差異：app 缺欄位（undefined）視為空字串', () => {
   const app = [{ date: '10/21', dest: 'A' }];
   const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '' }];
   assert.deepStrictEqual(diffFn(sheet, app), []);
+});
+
+const ALL_PRESENT = { date: true, dest: true, trans: true, stay: true, note: true, url: true, rain: true, ref: true };
+
+check('差異：選用欄缺席時完全不比對該欄', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '', ref: '' }];
+  const app = [{ date: '10/21', dest: 'A', rain: '原本的雨備', ref: 'https://old.com' }];
+  const present = Object.assign({}, ALL_PRESENT, { rain: false, ref: false });
+  assert.deepStrictEqual(diffFn(sheet, app, present), [], '欄位缺席時不能產生清空差異');
+});
+
+check('差異：選用欄存在且被清空時照常產生差異', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '', ref: '' }];
+  const app = [{ date: '10/21', dest: 'A', rain: '原本的雨備' }];
+  const d = diffFn(sheet, app, ALL_PRESENT).filter(x => x.field === 'rain');
+  assert.strictEqual(d.length, 1, '欄位存在但該格清空，是真的要清空');
+  assert.strictEqual(d[0].to, '');
+});
+
+check('差異：不傳 presentCols 時視為全部存在', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '新雨備', ref: '' }];
+  const app = [{ date: '10/21', dest: 'A' }];
+  const d = diffFn(sheet, app).filter(x => x.field === 'rain');
+  assert.strictEqual(d.length, 1);
+  assert.strictEqual(d[0].to, '新雨備');
+});
+
+check('差異：雨天備案與參考資料會被比對到', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '地下街', ref: 'https://r.com' }];
+  const app = [{ date: '10/21', dest: 'A' }];
+  const d = diffFn(sheet, app);
+  assert.ok(d.some(x => x.field === 'rain' && x.to === '地下街'));
+  assert.ok(d.some(x => x.field === 'ref' && x.to === 'https://r.com'));
 });
 
 check('套用：只套用被勾選的變動', () => {

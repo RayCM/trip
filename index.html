@@ -843,9 +843,11 @@ function sheetRowsToDays(rows){
  });
  return{days,skipped,duplicates,missingCols,unknownCols,presentCols};
 }
-const SHEET_FIELDS=[['dest','目的地'],['trans','交通與行程'],['stay','住宿'],['note','備註'],['url','訂票網址']];
+const SHEET_FIELDS=[['dest','目的地'],['trans','交通與行程'],['stay','住宿'],['note','備註'],['url','訂票網址'],['rain','雨天備案'],['ref','參考資料']];
 // 比對試算表與目前行程，回傳差異清單。app 端的值可能是舊的 {zh,en,ja} 物件，一律用 t() 取中文比。
-function diffSheet(sheetDays,list){
+// presentCols 標示試算表本次實際有哪些欄位；省略時視為全部存在。缺席的選用欄必須整個跳過，
+// 當成空字串會對每一天產生一筆預設勾選的清空差異。
+function diffSheet(sheetDays,list,presentCols){
  const diffs=[],byDate={};
  list.forEach((d,i)=>{byDate[d.date]=i;});
  sheetDays.forEach(sd=>{
@@ -855,7 +857,10 @@ function diffSheet(sheetDays,list){
   // 多出一天很容易刪掉，內容不見了救不回來。
   if(i===undefined){diffs.push({kind:'add',date:sd.date,day:sd,checked:true});return;}
   SHEET_FIELDS.forEach(([f])=>{
-   const from=t(list[i][f]),to=sd[f];
+   if(presentCols&&!presentCols[f])return;
+   // to 補 ''：sheetRowsToDays 產生的 day 每個欄位都有值，但手寫的比對來源可能缺 key，
+   // undefined 與 '' 不相等會變成一筆假差異
+   const from=t(list[i][f]),to=sd[f]||'';
    if(from!==to)diffs.push({kind:'change',date:sd.date,field:f,from,to,checked:true});
   });
  });
@@ -900,7 +905,7 @@ async function openSheetImport(){
  try{
   const parsed=sheetRowsToDays(parseCsv(await fetchSheet()));
   if(parsed.missingCols.length)throw new Error('試算表找不到這些欄位：'+parsed.missingCols.join('、'));
-  sheetDiffs=diffSheet(parsed.days,itinerary);
+  sheetDiffs=diffSheet(parsed.days,itinerary,parsed.presentCols);
   renderSheetDiff(parsed);
   document.getElementById('sheet-modal').classList.add('on');
  }catch(e){
