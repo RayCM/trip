@@ -46,10 +46,10 @@ global.navigator = {};
 
 // ---- 執行整段 app script ----
 // FB_READY 會是 false（沒有 window.TRIP_CONFIG、沒有 firebase），走本機模式分支
-let ranWithoutThrow = true, thrown = null;
+let ranWithoutThrow = true, thrown = null, R = null;
 try {
   // 尾端運算式把要檢查的東西交出來
-  eval(app + '\n;({renderAll,renderTimeline,renderTodos,renderExpenses,applyStatic,updateSeed,itinerary,cd,seedSubHtml,t})');
+  R = eval(app + '\n;({renderAll,renderTimeline,renderTodos,renderExpenses,applyStatic,updateSeed,itinerary,cd,seedSubHtml,t})');
 } catch (e) {
   ranWithoutThrow = false;
   thrown = e;
@@ -64,6 +64,21 @@ const check = (name, fn) => {
 
 const html = id => (els[id] && els[id].innerHTML) || '';
 const text = id => (els[id] && els[id].textContent) || '';
+
+// itinerary 只能就地改動（外部拿到的是同一個陣列引用，重新指派不會影響 eval 作用域內的變數）。
+// 跑完復原，否則後面檢查真實 15 天資料的測試會受影響。
+const withDays = (days, fn) => {
+  const saved = R.itinerary.slice();
+  R.itinerary.length = 0;
+  days.forEach(d => R.itinerary.push(d));
+  R.renderTimeline();
+  try { fn(); }
+  finally {
+    R.itinerary.length = 0;
+    saved.forEach(d => R.itinerary.push(d));
+    R.renderTimeline();
+  }
+};
 
 check('整段 script 載入並執行 init 不拋錯', () => {
   assert.ok(ranWithoutThrow, '拋錯: ' + (thrown && thrown.stack));
@@ -118,6 +133,34 @@ check('行程頁：住宿名稱是中文', () => {
   const tl = html('timeline');
   ['名古屋花園皇宮飯店', '富山地鐵飯店', '東橫 INN 松本站東口', '溫暖的家 ♡'].forEach(n =>
     assert.ok(tl.includes(n), '缺少住宿 ' + n));
+});
+
+check('行程卡片：有雨天備案時顯示該列', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', rain: '逛地下街' }], () => {
+    const tl = html('timeline');
+    assert.ok(tl.includes('逛地下街'), '雨天備案內容沒有渲染出來');
+    assert.ok(tl.includes('☂'));
+  });
+});
+
+check('行程卡片：沒有雨天備案時不渲染空列', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }], () => {
+    assert.ok(!html('timeline').includes('☂'), '空值不能渲染出空白列');
+  });
+});
+
+check('行程卡片：參考資料渲染成連結', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', ref: 'https://ref.com' }], () => {
+    const tl = html('timeline');
+    assert.ok(tl.includes('href="https://ref.com"'));
+    assert.ok(tl.includes('參考資料'));
+  });
+});
+
+check('行程卡片：沒有參考資料時不渲染按鈕', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }], () => {
+    assert.ok(!html('timeline').includes('reflink'), '空值不能渲染出空按鈕');
+  });
 });
 
 check('記帳頁：分類名稱是中文', () => {
