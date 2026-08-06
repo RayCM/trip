@@ -898,7 +898,7 @@ function applySheetDiff(diffs){
 }
 // checkbox 用 inline onchange，需要能存取差異清單，與 editingIndex 同一種作法
 let sheetDiffs=[];
-const DIFF_LABEL={dest:'目的地',trans:'交通與行程',stay:'住宿',note:'備註',url:'訂票網址'};
+const DIFF_LABEL={dest:'目的地',trans:'交通與行程',stay:'住宿',note:'備註',url:'訂票網址',rain:'雨天備案',ref:'參考資料'};
 async function openSheetImport(){
  const btn=document.getElementById('sheet-import');
  btn.disabled=true;btn.textContent='讀取中…';
@@ -923,6 +923,8 @@ function renderSheetDiff(parsed){
  const adds=sheetDiffs.filter(x=>x.kind==='add').length;
  if(adds)notes.push('試算表比行程多了 '+adds+' 天。若取消勾選「新增這天」，被擠到最後的內容會消失，請留意。');
  sheetDiffs.filter(x=>x.kind==='missing').forEach(x=>notes.push('試算表沒有 '+x.date+' 這天，行程中的這天不會被刪除。'));
+ // 試算表加了新欄位時要讓使用者知道，否則會以為 app 讀進來了
+ if(parsed.unknownCols&&parsed.unknownCols.length)notes.push('試算表有 app 未使用的欄位：'+parsed.unknownCols.join('、')+'。需要顯示的話再告訴我。');
  // 用 sheetDiffs 的真實索引，不要用過濾後陣列的索引——checkbox 是寫回 sheetDiffs[i]，錯位會靜默改到別的項目
  const rows=sheetDiffs.map((x,i)=>{
   if(x.kind==='missing')return '';

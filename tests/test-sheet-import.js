@@ -410,7 +410,7 @@ check('轉換：unknownCols 忽略空白標題', () => {
   assert.deepStrictEqual(r.unknownCols, [], '試算表尾端的空欄不該被當成新欄位');
 });
 
-const noSkips = { skipped: [], duplicates: [], missingCols: [] };
+const noSkips = { skipped: [], duplicates: [], missingCols: [], unknownCols: [] };
 const diffHtml = () => els['diff-list'].innerHTML;
 
 check('差異視窗：checkbox 索引對應 sheetDiffs 的真實索引', () => {
@@ -493,6 +493,28 @@ check('差異視窗：內容有做 HTML 跳脫', () => {
   renderFn(noSkips);
   assert.ok(!diffHtml().includes('<img'), '使用者內容必須跳脫，不能直接注入標籤');
   assert.ok(diffHtml().includes('&lt;img'), '應被跳脫成實體');
+});
+
+check('差異視窗：雨天備案與參考資料有中文標籤', () => {
+  sheetDiffs = [{ kind: 'change', date: '10/21', field: 'rain', from: '', to: '地下街', checked: true },
+                { kind: 'change', date: '10/21', field: 'ref', from: '', to: 'https://r.com', checked: true }];
+  renderFn(noSkips);
+  const h = diffHtml();
+  assert.ok(h.includes('雨天備案'), '不該直接顯示英文欄位名 rain');
+  assert.ok(h.includes('參考資料'), '不該直接顯示英文欄位名 ref');
+});
+
+check('差異視窗：列出 app 不認識的試算表欄位', () => {
+  sheetDiffs = [];
+  renderFn({ skipped: [], duplicates: [], missingCols: [], unknownCols: ['預算', '同行者'] });
+  const h = diffHtml();
+  assert.ok(h.includes('預算') && h.includes('同行者'), '新欄位要告知使用者，不能靜默忽略');
+});
+
+check('差異視窗：沒有未知欄位時不顯示該提示', () => {
+  sheetDiffs = [];
+  renderFn(noSkips);
+  assert.ok(!diffHtml().includes('未使用'));
 });
 
 console.log(`\n${passed}/${total} passed`);
