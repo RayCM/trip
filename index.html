@@ -74,9 +74,15 @@ main{padding-top:22px}
 .row .lbl{flex-shrink:0;color:var(--ink-faint);font-size:11px;font-weight:700;min-width:46px;letter-spacing:.03em;margin-top:2px}
 .note{color:var(--momiji);font-size:12.5px}
 .note .lbl{color:var(--momiji);opacity:.85}
+/* 雨天備案：仿備註那列的形狀，但用藍灰而非紅葉色——兩者性質不同，同色會分不出來 */
+.rain{color:var(--slate);font-size:12.5px}
+.rain .lbl{color:var(--slate);opacity:.85}
 .booklink{display:inline-flex;align-items:center;gap:5px;margin-top:10px;font-size:12px;font-weight:600;color:var(--slate);text-decoration:none;border:1px solid var(--line);border-radius:8px;padding:5px 11px;background:#fbf8f1;transition:.18s}
 .booklink:hover{border-color:var(--slate);background:#f3f7f9}
 .booklink:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+/* 參考資料按鈕與訂票按鈕並排，底色要能分辨，否則兩顆長得一模一樣 */
+.reflink{border-color:#cdd9e0;background:#f4f7f9}
+.reflink:hover{background:#eaf1f5}
 .stay-link{color:var(--slate);text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line);transition:.15s}
 .stay-link:hover{text-decoration-color:var(--slate)}
 .stay-link:focus-visible{outline:2px solid var(--slate);outline-offset:2px;border-radius:3px}
@@ -370,6 +376,8 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
       <div class="field full"><label id="ml-stay" for="m-stay"></label><input type="text" id="m-stay"></div>
       <div class="field full"><label id="ml-stayurl" for="m-stayurl"></label><input type="text" id="m-stayurl" placeholder="https://"></div>
       <div class="field full"><label id="ml-note" for="m-note"></label><textarea id="m-note" rows="2"></textarea></div>
+      <div class="field full"><label id="ml-rain" for="m-rain"></label><textarea id="m-rain" rows="2"></textarea></div>
+      <div class="field full"><label id="ml-ref" for="m-ref"></label><input type="text" id="m-ref" placeholder="https://"></div>
       <div class="field"><label id="ml-url" for="m-url"></label><input type="text" id="m-url" placeholder="https://"></div>
       <div class="field"><label id="ml-ulabel" for="m-ulabel"></label><input type="text" id="m-ulabel"></div>
       <div class="field full m-check"><label><input type="checkbox" id="m-leaf"> <span id="ml-leaf"></span></label></div>
@@ -501,6 +509,8 @@ const UI={
  fStay2:'住宿',
  fStayUrl:'住宿網址（選填）',
  fNote2:'備註（選填）',
+ fRain:'雨天備案（選填）',
+ fRef:'參考資料（選填）',
  fUrl:'訂票網址（選填）',
  fUlabel:'按鈕文字（選填）',
  fLeaf:'標為紅葉重點',
@@ -509,6 +519,7 @@ const UI={
  delDay:'刪除這天',
  confirmDel:'確定刪除這天行程？',
  bookGeneric:'訂票連結',
+ refGeneric:'參考資料',
  regions:['名古屋','北陸','信州','飛驒','其他'],
  settleTtl:'結算分帳',
  membersLabel:'同行成員',
@@ -714,6 +725,8 @@ function renderTimeline(){
   const leaf=d.leaf?`<svg class="leaf-mark" style="color:var(--momiji)"><use href="#momiji"/></svg>`:'';
   const noteRow=d.note&&t(d.note)?`<div class="row note"><span class="lbl">✿</span><span>${esc(t(d.note))}</span></div>`:'';
   const link=d.url?`<a class="booklink" href="${esc(d.url)}" target="_blank" rel="noopener">🎫 ${esc(t(d.ulabel)||t(UI.bookGeneric))}</a>`:'';
+  const rainRow=d.rain&&t(d.rain)?`<div class="row rain"><span class="lbl">☂</span><span>${esc(t(d.rain))}</span></div>`:'';
+  const reflink=d.ref?`<a class="booklink reflink" href="${esc(d.ref)}" target="_blank" rel="noopener">📖 ${esc(t(UI.refGeneric))} ↗</a>`:'';
   const tools=editMode?`<div class="day-tools">
      <button class="dtool" title="↑" onclick="moveDay(${i},-1)" ${i===0?'disabled':''}>↑</button>
      <button class="dtool" title="↓" onclick="moveDay(${i},1)" ${i===itinerary.length-1?'disabled':''}>↓</button>
@@ -728,7 +741,7 @@ function renderTimeline(){
     <div class="top"><span class="wd" style="background:${col}">${WD[wd]||''}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
     <div class="row"><span class="lbl">${t(UI.rowTrans)}</span><span>${esc(t(d.trans))}</span></div>
     <div class="row"><span class="lbl">${t(UI.rowStay)}</span><span>${stayHtml}</span></div>
-    ${noteRow}${link}${tools}
+    ${noteRow}${rainRow}${link}${reflink}${tools}
    </div></div>`;
  }).join('');
  document.getElementById('edit-toggle').textContent=editMode?t(UI.editOff):'✏️ '+t(UI.editOn);
@@ -807,17 +820,28 @@ function parseCsv(text){
  return rows;
 }
 // CSV 二維陣列 → day 物件。第一列是標題，依標題文字找欄位，欄位順序改變也不會錯位。
+// 第三個元素 true 代表選用欄：缺席時不中止匯入，且 diffSheet 會完全跳過它。
+// 不能把缺席的欄位當成空字串——那會對每一天產生一筆預設勾選的「清空」差異，整欄被抹掉。
 const SHEET_COLS=[['date','日期'],['dest','目的地'],['trans','詳細交通與行程細節'],
- ['stay','住宿地點'],['note','備註'],['url','訂票網址']];
+ ['stay','住宿地點'],['note','備註'],['url','訂票網址'],
+ ['rain','雨天備案',true],['ref','參考資料',true]];
 function sheetRowsToDays(rows){
- const days=[],skipped=[],duplicates=[],missingCols=[],seen={};
- if(!rows.length)return{days,skipped,duplicates,missingCols:SHEET_COLS.map(c=>c[1])};
+ const days=[],skipped=[],duplicates=[],missingCols=[],unknownCols=[],presentCols={},seen={};
+ const required=SHEET_COLS.filter(c=>!c[2]).map(c=>c[1]);
+ if(!rows.length)return{days,skipped,duplicates,missingCols:required,unknownCols,presentCols};
  const head=rows[0].map(h=>String(h||'').trim());
  const idx={};
- // 欄位找不到時不能當成空值——那會對每一天產生一筆「清空」差異且預設勾選，整欄被抹掉。
+ // 必要欄找不到時不能當成空值——那會對每一天產生一筆「清空」差異且預設勾選，整欄被抹掉。
  // 抓不到欄位多半代表標題被改名，或根本沒拿到 CSV（試算表被改成私人時 Google 回的是 HTML）。
- SHEET_COLS.forEach(([k,name])=>{idx[k]=head.indexOf(name);if(idx[k]<0)missingCols.push(name);});
- if(missingCols.length)return{days,skipped,duplicates,missingCols};
+ SHEET_COLS.forEach(([k,name,optional])=>{
+  idx[k]=head.indexOf(name);
+  presentCols[k]=idx[k]>=0;
+  if(idx[k]<0&&!optional)missingCols.push(name);
+ });
+ if(missingCols.length)return{days,skipped,duplicates,missingCols,unknownCols,presentCols};
+ // app 不認識的標題只做告知，不猜它該怎麼顯示。空白標題是試算表尾端的空欄，不算。
+ const known=SHEET_COLS.map(c=>c[1]);
+ head.forEach(h=>{if(h&&known.indexOf(h)<0&&unknownCols.indexOf(h)<0)unknownCols.push(h);});
  const val=(row,k)=>idx[k]<0?'':String(row[idx[k]]||'').trim();
  rows.slice(1).forEach((row,i)=>{
   if(!row.some(c=>String(c||'').trim()))return; // 整列空白，忽略
@@ -825,15 +849,18 @@ function sheetRowsToDays(rows){
   if(!d){skipped.push(i+2);return;} // +2：跳過標題列且轉成 1-based
   const date=String(d.getMonth()+1).padStart(2,'0')+'/'+String(d.getDate()).padStart(2,'0');
   const day={date,dest:val(row,'dest'),trans:val(row,'trans'),
-   stay:val(row,'stay'),note:val(row,'note'),url:val(row,'url')};
+   stay:val(row,'stay'),note:val(row,'note'),url:val(row,'url'),
+   rain:val(row,'rain'),ref:val(row,'ref')};
   if(date in seen){days[seen[date]]=day;duplicates.push(date);} // 重複日期以最後一列為準
   else{seen[date]=days.length;days.push(day);}
  });
- return{days,skipped,duplicates,missingCols};
+ return{days,skipped,duplicates,missingCols,unknownCols,presentCols};
 }
-const SHEET_FIELDS=[['dest','目的地'],['trans','交通與行程'],['stay','住宿'],['note','備註'],['url','訂票網址']];
+const SHEET_FIELDS=[['dest','目的地'],['trans','交通與行程'],['stay','住宿'],['note','備註'],['url','訂票網址'],['rain','雨天備案'],['ref','參考資料']];
 // 比對試算表與目前行程，回傳差異清單。app 端的值可能是舊的 {zh,en,ja} 物件，一律用 t() 取中文比。
-function diffSheet(sheetDays,list){
+// presentCols 標示試算表本次實際有哪些欄位；省略時視為全部存在。缺席的選用欄必須整個跳過，
+// 當成空字串會對每一天產生一筆預設勾選的清空差異。
+function diffSheet(sheetDays,list,presentCols){
  const diffs=[],byDate={};
  list.forEach((d,i)=>{byDate[d.date]=i;});
  sheetDays.forEach(sd=>{
@@ -843,7 +870,10 @@ function diffSheet(sheetDays,list){
   // 多出一天很容易刪掉，內容不見了救不回來。
   if(i===undefined){diffs.push({kind:'add',date:sd.date,day:sd,checked:true});return;}
   SHEET_FIELDS.forEach(([f])=>{
-   const from=t(list[i][f]),to=sd[f];
+   if(presentCols&&!presentCols[f])return;
+   // to 補 ''：sheetRowsToDays 產生的 day 每個欄位都有值，但手寫的比對來源可能缺 key，
+   // undefined 與 '' 不相等會變成一筆假差異
+   const from=t(list[i][f]),to=sd[f]||'';
    if(from!==to)diffs.push({kind:'change',date:sd.date,field:f,from,to,checked:true});
   });
  });
@@ -881,14 +911,14 @@ function applySheetDiff(diffs){
 }
 // checkbox 用 inline onchange，需要能存取差異清單，與 editingIndex 同一種作法
 let sheetDiffs=[];
-const DIFF_LABEL={dest:'目的地',trans:'交通與行程',stay:'住宿',note:'備註',url:'訂票網址'};
+const DIFF_LABEL={dest:'目的地',trans:'交通與行程',stay:'住宿',note:'備註',url:'訂票網址',rain:'雨天備案',ref:'參考資料'};
 async function openSheetImport(){
  const btn=document.getElementById('sheet-import');
  btn.disabled=true;btn.textContent='讀取中…';
  try{
   const parsed=sheetRowsToDays(parseCsv(await fetchSheet()));
   if(parsed.missingCols.length)throw new Error('試算表找不到這些欄位：'+parsed.missingCols.join('、'));
-  sheetDiffs=diffSheet(parsed.days,itinerary);
+  sheetDiffs=diffSheet(parsed.days,itinerary,parsed.presentCols);
   renderSheetDiff(parsed);
   document.getElementById('sheet-modal').classList.add('on');
  }catch(e){
@@ -906,6 +936,8 @@ function renderSheetDiff(parsed){
  const adds=sheetDiffs.filter(x=>x.kind==='add').length;
  if(adds)notes.push('試算表比行程多了 '+adds+' 天。若取消勾選「新增這天」，被擠到最後的內容會消失，請留意。');
  sheetDiffs.filter(x=>x.kind==='missing').forEach(x=>notes.push('試算表沒有 '+x.date+' 這天，行程中的這天不會被刪除。'));
+ // 試算表加了新欄位時要讓使用者知道，否則會以為 app 讀進來了
+ if(parsed.unknownCols&&parsed.unknownCols.length)notes.push('試算表有 app 未使用的欄位：'+parsed.unknownCols.join('、')+'。需要顯示的話再告訴我。');
  // 用 sheetDiffs 的真實索引，不要用過濾後陣列的索引——checkbox 是寫回 sheetDiffs[i]，錯位會靜默改到別的項目
  const rows=sheetDiffs.map((x,i)=>{
   if(x.kind==='missing')return '';
@@ -957,6 +989,8 @@ function openDayForm(i){
  document.getElementById('m-stay').value=t(d.stay);
  document.getElementById('m-stayurl').value=d.stayUrl||(d.stay&&typeof d.stay==='object'?d.stay.url:'')||'';
  document.getElementById('m-note').value=t(d.note);
+ document.getElementById('m-rain').value=t(d.rain);
+ document.getElementById('m-ref').value=d.ref||'';
  document.getElementById('m-url').value=d.url||'';
  document.getElementById('m-ulabel').value=t(d.ulabel);
  document.getElementById('m-leaf').checked=!!d.leaf;
@@ -969,6 +1003,8 @@ function openDayForm(i){
  document.getElementById('ml-stay').textContent=t(UI.fStay2);
  document.getElementById('ml-stayurl').textContent=t(UI.fStayUrl);
  document.getElementById('ml-note').textContent=t(UI.fNote2);
+ document.getElementById('ml-rain').textContent=t(UI.fRain);
+ document.getElementById('ml-ref').textContent=t(UI.fRef);
  document.getElementById('ml-url').textContent=t(UI.fUrl);
  document.getElementById('ml-ulabel').textContent=t(UI.fUlabel);
  document.getElementById('ml-leaf').textContent=t(UI.fLeaf);
@@ -985,11 +1021,17 @@ async function saveDayForm(){
  // 日期欄位可輸入時（第 1 天）它決定整趟行程，空白或格式錯了會把全部日期算歪
  const dateEl=document.getElementById('m-date');
  if(!dateEl.readOnly&&!isValidAnchorDate(v('m-date'))){alert('日期請填 MM/DD，例如 10/21');return;}
- const day={date:v('m-date'),r:document.getElementById('m-region').value,
+ // 以現有的那天為基底，表單沒列到的欄位（未來新增的欄位、只存在於試算表的資料）才不會被丟掉。
+ // 表單管理的欄位語意不變：留空就刪除該欄。
+ const base=editingIndex!=null?itinerary[editingIndex]:{};
+ const day=Object.assign({},base,{date:v('m-date'),r:document.getElementById('m-region').value,
   dest:dest,trans:v('m-trans'),stay:v('m-stay'),stayUrl:v('m-stayurl'),note:v('m-note'),
-  url:v('m-url'),ulabel:v('m-ulabel'),leaf:document.getElementById('m-leaf').checked};
+  url:v('m-url'),ulabel:v('m-ulabel'),rain:v('m-rain'),ref:v('m-ref'),
+  leaf:document.getElementById('m-leaf').checked});
  if(!day.note)delete day.note;
  if(!day.stayUrl)delete day.stayUrl;
+ if(!day.rain)delete day.rain;
+ if(!day.ref)delete day.ref;
  if(!day.url){delete day.url;delete day.ulabel;}
  if(editingIndex!=null)itinerary[editingIndex]=day; else itinerary.push(day);
  resequenceDates();

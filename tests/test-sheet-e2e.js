@@ -24,7 +24,7 @@ const FN = eval([
   grab(/const SHEET_COLS=[[\s\S]*?\];/, 'SHEET_COLS'),
   grab(/function sheetRowsToDays\(rows\)\{[\s\S]*?\n\}/, 'sheetRowsToDays()'),
   grab(/const SHEET_FIELDS=[^\n]*/, 'SHEET_FIELDS'),
-  grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
+  grab(/function diffSheet\(sheetDays,list,presentCols\)\{[\s\S]*?\n\}/, 'diffSheet()'),
   grab(/function applySheetDiff\(diffs\)\{[\s\S]*?\n\}/, 'applySheetDiff()'),
   ';({DEFAULT_DAYS,parseCsv,sheetRowsToDays,diffSheet,applySheetDiff,t})',
 ].join('\n'));
@@ -50,7 +50,7 @@ check('與 DEFAULT_DAYS 比對，找得出已知的行程差異', () => {
   const diffs = FN.diffSheet(parsed.days, itinerary);
   const dest1024 = diffs.find(d => d.date === '10/24' && d.field === 'dest');
   assert.ok(dest1024, '10/24 的目的地應該有差異');
-  assert.strictEqual(dest1024.to, '金澤車站、兼六園');
+  assert.strictEqual(dest1024.to, '金澤車站、兼六園、近江町市場、東茶屋街');
   assert.strictEqual(diffs.filter(d => d.kind === 'add').length, 0, '兩邊都是 10/21–11/04，不該有新增');
   assert.strictEqual(diffs.filter(d => d.kind === 'missing').length, 0, '不該有缺漏');
 });
@@ -62,7 +62,7 @@ check('全部套用後，行程內容與試算表一致', () => {
   parsed.days.forEach(sd => {
     const day = itinerary.find(d => d.date === sd.date);
     assert.ok(day, '找不到 ' + sd.date);
-    ['dest', 'trans', 'stay', 'note', 'url'].forEach(f => {
+    ['dest', 'trans', 'stay', 'note', 'url', 'rain', 'ref'].forEach(f => {
       assert.strictEqual(FN.t(day[f]), sd[f], `${sd.date} 的 ${f} 不一致`);
     });
   });
@@ -120,6 +120,37 @@ check('沒勾選的項目不會被套用', () => {
   const diffs = FN.diffSheet(parsed.days, itinerary).map(d => Object.assign({}, d, { checked: false }));
   FN.applySheetDiff(diffs);
   assert.strictEqual(FN.t(itinerary[3].dest), before, '全部不勾選時不該有任何改動');
+});
+
+check('端對端：真實 fixture 的雨天備案會匯入', () => {
+  assert.deepStrictEqual(parsed.missingCols, []);
+  assert.strictEqual(parsed.presentCols.rain, true);
+  assert.strictEqual(parsed.presentCols.ref, true);
+  assert.ok(parsed.days.filter(d => d.rain).length >= 10,
+    '真實資料多數天都有雨天備案，實際 ' + parsed.days.filter(d => d.rain).length);
+});
+
+check('端對端：拿掉雨天備案欄不會產生清空差異', () => {
+  const rows = FN.parseCsv(csv);
+  const at = rows[0].indexOf('雨天備案');
+  assert.ok(at >= 0, '前提檢查：fixture 應該要有雨天備案欄');
+  const stripped = rows.map(r => r.filter((_, i) => i !== at));
+  const p2 = FN.sheetRowsToDays(stripped);
+  assert.deepStrictEqual(p2.missingCols, [], '選用欄缺席不該中止匯入');
+  assert.strictEqual(p2.presentCols.rain, false);
+
+  itinerary = p2.days.map(d => Object.assign({}, d, { rain: '原本就有的雨備' }));
+  const diffs = FN.diffSheet(p2.days, itinerary, p2.presentCols);
+  assert.strictEqual(diffs.filter(x => x.field === 'rain').length, 0,
+    '欄位從試算表被移除，不等於要清空 app 上已有的資料');
+});
+
+check('端對端：未使用的欄位會被回報', () => {
+  const rows = FN.parseCsv(csv);
+  const withExtra = rows.map((r, i) => i === 0 ? r.concat(['預算']) : r.concat(['3000']));
+  const p2 = FN.sheetRowsToDays(withExtra);
+  assert.deepStrictEqual(p2.unknownCols, ['預算']);
+  assert.deepStrictEqual(p2.missingCols, [], '多出欄位不該影響匯入');
 });
 
 console.log(`\n${passed}/${total} passed`);

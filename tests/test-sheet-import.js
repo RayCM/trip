@@ -29,7 +29,7 @@ const FN = eval([
   grab(/const SHEET_COLS=[[\s\S]*?\];/, 'SHEET_COLS'),
   grab(/function sheetRowsToDays\(rows\)\{[\s\S]*?\n\}/, 'sheetRowsToDays()'),
   grab(/const SHEET_FIELDS=[^\n]*/, 'SHEET_FIELDS'),
-  grab(/function diffSheet\(sheetDays,list\)\{[\s\S]*?\n\}/, 'diffSheet()'),
+  grab(/function diffSheet\(sheetDays,list,presentCols\)\{[\s\S]*?\n\}/, 'diffSheet()'),
   grab(/function resequenceDates\(\)\{[\s\S]*?\n\}/, 'resequenceDates()'),
   grab(/function applySheetDiff\(diffs\)\{[\s\S]*?\n\}/, 'applySheetDiff()'),
   grab(/function esc\(s\)\{[^\n]*\}/, 'esc()'),
@@ -85,53 +85,54 @@ check('空字串', () => {
   assert.deepStrictEqual(parseCsvFn(''), []);
 });
 
-check('真實試算表：15 列資料、7 個欄位', () => {
+check('真實試算表：15 列資料、8 個欄位', () => {
   const csv = fs.readFileSync(path.join(__dirname, 'fixtures', 'sheet-sample.csv'), 'utf8');
   const rows = parseCsvFn(csv).filter(r => r.some(c => c.trim()));
   assert.strictEqual(rows.length, 16, '應為 1 列標題 + 15 列資料');
-  assert.deepStrictEqual(rows[0], ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '參考資料']);
+  assert.deepStrictEqual(rows[0], ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '雨天備案', '參考資料']);
   assert.strictEqual(rows[1][0], '10/21(週三)');
   assert.strictEqual(rows[15][0], '11/04(週三)');
   // 含換行與逗號的長儲存格必須完整
   assert.ok(rows[3][4].includes('きときと市場'), '10/23 的備註被截斷了');
 });
 
-const HEAD = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '參考資料'];
+const HEAD = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '雨天備案', '參考資料'];
 
 check('轉換：日期正規化、欄位對應', () => {
-  const r = toDays([HEAD, ['10/21(週三)', '名古屋', '搭機', '花園皇宮', '記得帶護照', 'https://x.com', '參考']]);
+  const r = toDays([HEAD, ['10/21(週三)', '名古屋', '搭機', '花園皇宮', '記得帶護照', 'https://x.com', '地下街', 'https://ref.com']]);
   assert.deepStrictEqual(r.days, [{
     date: '10/21', dest: '名古屋', trans: '搭機', stay: '花園皇宮',
-    note: '記得帶護照', url: 'https://x.com',
+    note: '記得帶護照', url: 'https://x.com', rain: '地下街', ref: 'https://ref.com',
   }]);
   assert.deepStrictEqual(r.skipped, []);
 });
 
-check('轉換：參考資料欄不匯入', () => {
-  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '不該出現']]);
-  assert.ok(!JSON.stringify(r.days).includes('不該出現'));
+check('轉換：雨天備案與參考資料會匯入', () => {
+  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '雨備內容', 'https://ref.com']]);
+  assert.strictEqual(r.days[0].rain, '雨備內容');
+  assert.strictEqual(r.days[0].ref, 'https://ref.com');
 });
 
 check('轉換：前後空白會被去掉', () => {
-  const r = toDays([HEAD, ['  10/21  ', '  名古屋  ', '', '', '', '', '']]);
+  const r = toDays([HEAD, ['  10/21  ', '  名古屋  ', '', '', '', '', '', '']]);
   assert.strictEqual(r.days[0].date, '10/21');
   assert.strictEqual(r.days[0].dest, '名古屋');
 });
 
 check('轉換：日期無法解析的列被略過並記錄列號', () => {
-  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', ''], ['沒有日期', 'B', '', '', '', '', ''], ['10/23', 'C', '', '', '', '', '']]);
+  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '', ''], ['沒有日期', 'B', '', '', '', '', '', ''], ['10/23', 'C', '', '', '', '', '', '']]);
   assert.deepStrictEqual(r.days.map(d => d.dest), ['A', 'C']);
   assert.deepStrictEqual(r.skipped, [3], '第 3 列應被記錄為略過（含標題列的 1-based 列號）');
 });
 
 check('轉換：整列空白直接忽略，不計入略過', () => {
-  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', ''], ['', '', '', '', '', '', '']]);
+  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '', ''], ['', '', '', '', '', '', '', '']]);
   assert.strictEqual(r.days.length, 1);
   assert.deepStrictEqual(r.skipped, []);
 });
 
 check('轉換：重複日期以最後一列為準並記錄', () => {
-  const r = toDays([HEAD, ['10/21', '舊的', '', '', '', '', ''], ['10/21', '新的', '', '', '', '', '']]);
+  const r = toDays([HEAD, ['10/21', '舊的', '', '', '', '', '', ''], ['10/21', '新的', '', '', '', '', '', '']]);
   assert.strictEqual(r.days.length, 1);
   assert.strictEqual(r.days[0].dest, '新的');
   assert.deepStrictEqual(r.duplicates, ['10/21']);
@@ -144,7 +145,7 @@ check('轉換：真實試算表 15 天，日期正規化正確', () => {
   assert.deepStrictEqual(r.skipped, []);
   assert.strictEqual(r.days[0].date, '10/21');
   assert.strictEqual(r.days[14].date, '11/04');
-  assert.strictEqual(r.days[3].dest, '金澤車站、兼六園');
+  assert.strictEqual(r.days[3].dest, '金澤車站、兼六園、近江町市場、東茶屋街');
   assert.ok(r.days[2].note.includes('きときと市場'), '含換行的備註被截斷');
 });
 
@@ -218,6 +219,39 @@ check('差異：app 缺欄位（undefined）視為空字串', () => {
   const app = [{ date: '10/21', dest: 'A' }];
   const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '' }];
   assert.deepStrictEqual(diffFn(sheet, app), []);
+});
+
+const ALL_PRESENT = { date: true, dest: true, trans: true, stay: true, note: true, url: true, rain: true, ref: true };
+
+check('差異：選用欄缺席時完全不比對該欄', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '', ref: '' }];
+  const app = [{ date: '10/21', dest: 'A', rain: '原本的雨備', ref: 'https://old.com' }];
+  const present = Object.assign({}, ALL_PRESENT, { rain: false, ref: false });
+  assert.deepStrictEqual(diffFn(sheet, app, present), [], '欄位缺席時不能產生清空差異');
+});
+
+check('差異：選用欄存在且被清空時照常產生差異', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '', ref: '' }];
+  const app = [{ date: '10/21', dest: 'A', rain: '原本的雨備' }];
+  const d = diffFn(sheet, app, ALL_PRESENT).filter(x => x.field === 'rain');
+  assert.strictEqual(d.length, 1, '欄位存在但該格清空，是真的要清空');
+  assert.strictEqual(d[0].to, '');
+});
+
+check('差異：不傳 presentCols 時視為全部存在', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '新雨備', ref: '' }];
+  const app = [{ date: '10/21', dest: 'A' }];
+  const d = diffFn(sheet, app).filter(x => x.field === 'rain');
+  assert.strictEqual(d.length, 1);
+  assert.strictEqual(d[0].to, '新雨備');
+});
+
+check('差異：雨天備案與參考資料會被比對到', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '地下街', ref: 'https://r.com' }];
+  const app = [{ date: '10/21', dest: 'A' }];
+  const d = diffFn(sheet, app);
+  assert.ok(d.some(x => x.field === 'rain' && x.to === '地下街'));
+  assert.ok(d.some(x => x.field === 'ref' && x.to === 'https://r.com'));
 });
 
 check('套用：只套用被勾選的變動', () => {
@@ -329,7 +363,7 @@ check('轉換：缺少欄位標題會被回報，不會靜默把該欄清空', (
 });
 
 check('轉換：欄位齊全時 missingCols 是空的', () => {
-  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '']]);
+  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '', '']]);
   assert.deepStrictEqual(r.missingCols, []);
 });
 
@@ -340,7 +374,43 @@ check('轉換：拿到 HTML（試算表被改成私人）時會回報缺少所�
   assert.ok(r.missingCols.includes('日期'), '至少要偵測到缺少日期欄');
 });
 
-const noSkips = { skipped: [], duplicates: [], missingCols: [] };
+const NO_OPTIONAL = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址'];
+
+check('轉換：選用欄缺席不算 missingCols', () => {
+  const r = toDays([NO_OPTIONAL, ['10/21', 'A', 'T', 'S', 'N', 'U']]);
+  assert.deepStrictEqual(r.missingCols, [], '選用欄缺席不該中止匯入');
+});
+
+check('轉換：必要欄缺席仍算 missingCols', () => {
+  const noNote2 = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '訂票網址', '雨天備案', '參考資料'];
+  const r = toDays([noNote2, ['10/21', 'A', 'T', 'S', 'U', 'R', 'F']]);
+  assert.deepStrictEqual(r.missingCols, ['備註']);
+});
+
+check('轉換：presentCols 標示本次實際存在的欄位', () => {
+  const r = toDays([NO_OPTIONAL, ['10/21', 'A', 'T', 'S', 'N', 'U']]);
+  assert.strictEqual(r.presentCols.rain, false);
+  assert.strictEqual(r.presentCols.ref, false);
+  assert.strictEqual(r.presentCols.dest, true);
+
+  const r2 = toDays([HEAD, ['10/21', 'A', 'T', 'S', 'N', 'U', 'R', 'F']]);
+  assert.strictEqual(r2.presentCols.rain, true);
+  assert.strictEqual(r2.presentCols.ref, true);
+});
+
+check('轉換：unknownCols 列出 app 不認識的標題', () => {
+  const extra = HEAD.concat(['預算', '同行者']);
+  const r = toDays([extra, ['10/21', 'A', 'T', 'S', 'N', 'U', 'R', 'F', '3000', '小明']]);
+  assert.deepStrictEqual(r.unknownCols, ['預算', '同行者']);
+});
+
+check('轉換：unknownCols 忽略空白標題', () => {
+  const extra = HEAD.concat(['', '  ']);
+  const r = toDays([extra, ['10/21', 'A', 'T', 'S', 'N', 'U', 'R', 'F', '', '']]);
+  assert.deepStrictEqual(r.unknownCols, [], '試算表尾端的空欄不該被當成新欄位');
+});
+
+const noSkips = { skipped: [], duplicates: [], missingCols: [], unknownCols: [] };
 const diffHtml = () => els['diff-list'].innerHTML;
 
 check('差異視窗：checkbox 索引對應 sheetDiffs 的真實索引', () => {
@@ -423,6 +493,28 @@ check('差異視窗：內容有做 HTML 跳脫', () => {
   renderFn(noSkips);
   assert.ok(!diffHtml().includes('<img'), '使用者內容必須跳脫，不能直接注入標籤');
   assert.ok(diffHtml().includes('&lt;img'), '應被跳脫成實體');
+});
+
+check('差異視窗：雨天備案與參考資料有中文標籤', () => {
+  sheetDiffs = [{ kind: 'change', date: '10/21', field: 'rain', from: '', to: '地下街', checked: true },
+                { kind: 'change', date: '10/21', field: 'ref', from: '', to: 'https://r.com', checked: true }];
+  renderFn(noSkips);
+  const h = diffHtml();
+  assert.ok(h.includes('雨天備案'), '不該直接顯示英文欄位名 rain');
+  assert.ok(h.includes('參考資料'), '不該直接顯示英文欄位名 ref');
+});
+
+check('差異視窗：列出 app 不認識的試算表欄位', () => {
+  sheetDiffs = [];
+  renderFn({ skipped: [], duplicates: [], missingCols: [], unknownCols: ['預算', '同行者'] });
+  const h = diffHtml();
+  assert.ok(h.includes('預算') && h.includes('同行者'), '新欄位要告知使用者，不能靜默忽略');
+});
+
+check('差異視窗：沒有未知欄位時不顯示該提示', () => {
+  sheetDiffs = [];
+  renderFn(noSkips);
+  assert.ok(!diffHtml().includes('未使用'));
 });
 
 console.log(`\n${passed}/${total} passed`);
