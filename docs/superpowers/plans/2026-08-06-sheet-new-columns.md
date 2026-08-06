@@ -25,13 +25,76 @@ node tests/test-sheet-import.js   # 單一支
 
 **專案程式碼風格：** 緊湊寫法（`const a=1;` 無多餘空格）、中文註解說明「為什麼」而非「做什麼」。跟著 `index.html` 現有寫法走，不要套用其他專案的排版習慣。
 
-**三個既有測試會與新行為衝突**，Task 1 與 Task 2 會逐一處理，不是測試壞了：
+**四個既有測試會與新行為衝突**，Task 0 到 Task 2 會逐一處理，不是測試壞了：
 
-| 位置 | 現況 | 為何衝突 |
-|---|---|---|
-| `test-sheet-import.js:110` | `check('轉換：參考資料欄不匯入', …)` | 這正是本次要改掉的行為 |
-| `test-sheet-import.js:102-108` | `deepStrictEqual(r.days, [{date,dest,trans,stay,note,url}])` | day 物件會多出 `rain`、`ref` 兩個 key |
-| `tests/fixtures/sheet-sample.csv` | 標題列只有 7 欄，沒有「雨天備案」 | fixture 是舊的試算表副本 |
+| 位置 | 現況 | 為何衝突 | 在哪處理 |
+|---|---|---|---|
+| `tests/fixtures/sheet-sample.csv` | 標題列只有 7 欄，沒有「雨天備案」 | fixture 是舊的試算表副本 | Task 0 |
+| `test-sheet-import.js:92` | `deepStrictEqual(rows[0], […7 個欄位])` | 標題列會變成 8 欄 | Task 0 |
+| `test-sheet-import.js:110` | `check('轉換：參考資料欄不匯入', …)` | 這正是本次要改掉的行為 | Task 1 |
+| `test-sheet-import.js:102-108` | `deepStrictEqual(r.days, [{date,dest,trans,stay,note,url}])` | day 物件會多出 `rain`、`ref` 兩個 key | Task 1 |
+
+另有一個**不需改測試、但必須在實作中處理**的陷阱：`test-sheet-import.js:151` 的 `mkDay` helper 產生的物件沒有 `rain`／`ref`，而差異測試手寫的 sheet 物件同樣沒有。`diffSheet` 若直接用 `sd[f]` 會拿 `''` 與 `undefined` 相比而產生假差異，打掉「差異：完全相同時回空清單」等既有測試。Task 2 的實作以 `sd[f]||''` 解決。
+
+---
+
+## Task 0: 先把 fixture 換成試算表現況
+
+先做這一步，後面每個任務才是對著真實的 8 欄資料跑，而不是等到最後才發現落差。
+
+換 fixture **不需要先改任何程式碼**：現行 `sheetRowsToDays` 用 `head.indexOf(name)` 找欄位，多出來的「雨天備案」只是被忽略的未知欄，`missingCols` 仍為空。
+
+**Files:**
+- Modify: `tests/fixtures/sheet-sample.csv`
+- Modify: `tests/test-sheet-import.js:88-97`
+
+- [ ] **Step 1: 下載最新的試算表副本**
+
+```sh
+curl -sL "https://docs.google.com/spreadsheets/d/1JkPtZ1lH585Dclw7pWVbMvl5XLZZ1Y8sGx_jZSNabTw/export?format=csv&gid=78477160" -o tests/fixtures/sheet-sample.csv
+head -1 tests/fixtures/sheet-sample.csv
+```
+
+Expected: `日期,目的地,詳細交通與行程細節,住宿地點,備註,訂票網址,雨天備案,參考資料`
+
+- [ ] **Step 2: 執行測試確認失敗**
+
+Run: `node tests/test-sheet-import.js`
+Expected: FAIL 一項——`真實試算表：15 列資料、7 個欄位` 的標題列斷言。其餘應全數通過；若有別的項目紅了，代表試算表結構有其他變動，先查清楚。
+
+- [ ] **Step 3: 更新標題列斷言**
+
+`tests/test-sheet-import.js:88-92`，測試名稱與斷言都改成 8 欄：
+
+```js
+check('真實試算表：15 列資料、8 個欄位', () => {
+  const csv = fs.readFileSync(path.join(__dirname, 'fixtures', 'sheet-sample.csv'), 'utf8');
+  const rows = parseCsvFn(csv).filter(r => r.some(c => c.trim()));
+  assert.strictEqual(rows.length, 16, '應為 1 列標題 + 15 列資料');
+  assert.deepStrictEqual(rows[0], ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '雨天備案', '參考資料']);
+```
+
+第 93-97 行（`rows[1][0]`、`rows[15][0]`、`きときと市場`）維持不動。
+
+- [ ] **Step 4: 跑全部測試確認綠燈**
+
+Run: `sh tests/run-all.sh`
+Expected: `全部通過`
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add tests/fixtures/sheet-sample.csv tests/test-sheet-import.js
+git commit -m "$(cat <<'EOF'
+更新試算表 fixture 為現況的 8 欄
+
+試算表新增了「雨天備案」欄。此時匯入功能還沒支援，多出來的欄位
+會被忽略，行為不變。
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+EOF
+)"
+```
 
 ---
 
@@ -279,7 +342,9 @@ function diffSheet(sheetDays,list,presentCols){
   if(i===undefined){diffs.push({kind:'add',date:sd.date,day:sd,checked:true});return;}
   SHEET_FIELDS.forEach(([f])=>{
    if(presentCols&&!presentCols[f])return;
-   const from=t(list[i][f]),to=sd[f];
+   // to 補 ''：sheetRowsToDays 產生的 day 每個欄位都有值，但手寫的比對來源可能缺 key，
+   // undefined 與 '' 不相等會變成一筆假差異
+   const from=t(list[i][f]),to=sd[f]||'';
    if(from!==to)diffs.push({kind:'change',date:sd.date,field:f,from,to,checked:true});
   });
  });
@@ -692,24 +757,14 @@ EOF
 
 ---
 
-## Task 6: fixture、端對端測試與文件收尾
+## Task 6: 端對端測試與文件收尾
 
 **Files:**
-- Modify: `tests/fixtures/sheet-sample.csv`
 - Modify: `tests/test-sheet-e2e.js`
 - Modify: `tests/README.md`
 - Modify: `docs/superpowers/specs/2026-08-05-sheet-import-design.md`
 
-- [ ] **Step 1: 更新 fixture 為試算表現況**
-
-```sh
-curl -sL "https://docs.google.com/spreadsheets/d/1JkPtZ1lH585Dclw7pWVbMvl5XLZZ1Y8sGx_jZSNabTw/export?format=csv&gid=78477160" -o tests/fixtures/sheet-sample.csv
-head -1 tests/fixtures/sheet-sample.csv
-```
-
-Expected: 標題列為 `日期,目的地,詳細交通與行程細節,住宿地點,備註,訂票網址,雨天備案,參考資料`
-
-- [ ] **Step 2: 執行端對端測試看現況**
+- [ ] **Step 1: 執行端對端測試看現況**
 
 Run: `node tests/test-sheet-e2e.js`
 Expected: 全部通過。既有七項斷言都不該因新欄位而改變——`add`／`missing` 筆數不受影響、冪等性不受影響、`leaf`／`r`／住宿連結的保護也不受影響。**若有任何一項紅了，先查清楚原因再繼續，不要直接改斷言遷就結果。**
@@ -722,7 +777,7 @@ Expected: 全部通過。既有七項斷言都不該因新欄位而改變——`
     });
 ```
 
-- [ ] **Step 3: 加端對端測試**
+- [ ] **Step 2: 加端對端測試**
 
 該檔已有模組層級的 `csv`（fixture 內容）與 `parsed`（解析結果），受測函式掛在 `FN` 上。加到既有測試之後：
 
@@ -759,12 +814,12 @@ check('端對端：未使用的欄位會被回報', () => {
 });
 ```
 
-- [ ] **Step 4: 跑全部測試**
+- [ ] **Step 3: 跑全部測試**
 
 Run: `sh tests/run-all.sh`
 Expected: 全部通過，最後一行 `全部通過`。若 `i18n-snapshot` MISMATCH，代表 Task 4／Task 5 的 baseline 更新沒做完整，重跑 `node tests/i18n-snapshot.js > tests/baseline.json` 並檢視 diff。
 
-- [ ] **Step 5: 更新測試文件的項數表**
+- [ ] **Step 4: 更新測試文件的項數表**
 
 `tests/README.md` 的表格中 `test-sheet-import.js`、`test-sheet-e2e.js`、`test-render.js`、`test-dayform.js` 四列的項數改成實際數字（各支測試執行後最後一行會印出通過項數），並更新表格下方的總數。
 
@@ -774,7 +829,7 @@ Expected: 全部通過，最後一行 `全部通過`。若 `i18n-snapshot` MISMA
 - **`tests/fixtures/sheet-sample.csv` 是 Google 試算表的副本。** 試算表若增減欄位或改欄位名稱，`test-sheet-import.js` 會紅——那是正確的警示，代表匯入功能的欄位對應要跟著更新，不是測試壞了。其中「雨天備案」與「參考資料」是選用欄，從試算表移除它們不會中止匯入，也不會清空 app 上已有的資料。
 ```
 
-- [ ] **Step 6: 更新舊設計文件的限制段落**
+- [ ] **Step 5: 更新舊設計文件的限制段落**
 
 `docs/superpowers/specs/2026-08-05-sheet-import-design.md:159` 的限制清單補上一行，指向新的設計文件：
 
@@ -782,12 +837,12 @@ Expected: 全部通過，最後一行 `全部通過`。若 `i18n-snapshot` MISMA
 - **欄位對應已於 2026-08-06 擴充**：新增「雨天備案」「參考資料」兩個選用欄，見 `2026-08-06-sheet-new-columns-design.md`。
 ```
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add tests/ docs/
 git commit -m "$(cat <<'EOF'
-更新 fixture 為試算表現況，補端對端測試與文件
+補端對端測試與文件更新
 
 Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
 EOF
