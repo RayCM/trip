@@ -184,5 +184,39 @@ const check = async (name, fn) => {
     pushed[0].forEach((d, i) => assert.ok(!('wd' in d), `第 ${i + 1} 天仍帶 wd`));
   });
 
+  await check('存檔：保留未列在表單中的欄位', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', mystery: '不該消失' }]; reset();
+    openForm(0);
+    await saveForm();
+    assert.strictEqual(itinerary[0].mystery, '不該消失', '表單沒列到的欄位不能被丟掉');
+  });
+
+  await check('存檔：雨天備案與參考資料會寫回', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }]; reset();
+    openForm(0);
+    document.getElementById('m-rain').value = '逛地下街';
+    document.getElementById('m-ref').value = 'https://ref.com';
+    await saveForm();
+    assert.strictEqual(itinerary[0].rain, '逛地下街');
+    assert.strictEqual(itinerary[0].ref, 'https://ref.com');
+  });
+
+  await check('存檔：兩欄留空時刪除該欄而不是留空字串', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', rain: '舊的', ref: 'https://old.com' }]; reset();
+    openForm(0);
+    document.getElementById('m-rain').value = '';
+    document.getElementById('m-ref').value = '';
+    await saveForm();
+    assert.ok(!('rain' in itinerary[0]), '留空應刪除欄位而不是留下空字串');
+    assert.ok(!('ref' in itinerary[0]));
+  });
+
+  await check('編輯視窗：帶入現有的雨天備案與參考資料', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', rain: '地下街', ref: 'https://r.com' }]; reset();
+    openForm(0);
+    assert.strictEqual(document.getElementById('m-rain').value, '地下街');
+    assert.strictEqual(document.getElementById('m-ref').value, 'https://r.com');
+  });
+
   console.log(`\n${passed}/${total} passed`);
 })();
