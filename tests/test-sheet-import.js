@@ -85,11 +85,11 @@ check('空字串', () => {
   assert.deepStrictEqual(parseCsvFn(''), []);
 });
 
-check('真實試算表：15 列資料、7 個欄位', () => {
+check('真實試算表：15 列資料、8 個欄位', () => {
   const csv = fs.readFileSync(path.join(__dirname, 'fixtures', 'sheet-sample.csv'), 'utf8');
   const rows = parseCsvFn(csv).filter(r => r.some(c => c.trim()));
   assert.strictEqual(rows.length, 16, '應為 1 列標題 + 15 列資料');
-  assert.deepStrictEqual(rows[0], ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '參考資料']);
+  assert.deepStrictEqual(rows[0], ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '雨天備案', '參考資料']);
   assert.strictEqual(rows[1][0], '10/21(週三)');
   assert.strictEqual(rows[15][0], '11/04(週三)');
   // 含換行與逗號的長儲存格必須完整
@@ -144,7 +144,7 @@ check('轉換：真實試算表 15 天，日期正規化正確', () => {
   assert.deepStrictEqual(r.skipped, []);
   assert.strictEqual(r.days[0].date, '10/21');
   assert.strictEqual(r.days[14].date, '11/04');
-  assert.strictEqual(r.days[3].dest, '金澤車站、兼六園');
+  assert.strictEqual(r.days[3].dest, '金澤車站、兼六園、近江町市場、東茶屋街');
   assert.ok(r.days[2].note.includes('きときと市場'), '含換行的備註被截斷');
 });
 

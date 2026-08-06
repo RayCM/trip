@@ -50,7 +50,7 @@ check('與 DEFAULT_DAYS 比對，找得出已知的行程差異', () => {
   const diffs = FN.diffSheet(parsed.days, itinerary);
   const dest1024 = diffs.find(d => d.date === '10/24' && d.field === 'dest');
   assert.ok(dest1024, '10/24 的目的地應該有差異');
-  assert.strictEqual(dest1024.to, '金澤車站、兼六園');
+  assert.strictEqual(dest1024.to, '金澤車站、兼六園、近江町市場、東茶屋街');
   assert.strictEqual(diffs.filter(d => d.kind === 'add').length, 0, '兩邊都是 10/21–11/04，不該有新增');
   assert.strictEqual(diffs.filter(d => d.kind === 'missing').length, 0, '不該有缺漏');
 });
