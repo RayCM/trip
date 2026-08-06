@@ -139,13 +139,22 @@ check('行程卡片：有雨天備案時顯示該列', () => {
   withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', rain: '逛地下街' }], () => {
     const tl = html('timeline');
     assert.ok(tl.includes('逛地下街'), '雨天備案內容沒有渲染出來');
-    assert.ok(tl.includes('☂'));
+    assert.ok(tl.includes('雨天備案'), '標籤要是看得懂的文字，不是只有符號');
   });
 });
 
 check('行程卡片：沒有雨天備案時不渲染空列', () => {
   withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }], () => {
-    assert.ok(!html('timeline').includes('☂'), '空值不能渲染出空白列');
+    assert.ok(!html('timeline').includes('雨天備案'), '空值不能渲染出空白列');
+  });
+});
+
+check('行程卡片：備註列的標籤是文字而非符號', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', note: '記得帶護照' }], () => {
+    const tl = html('timeline');
+    assert.ok(tl.includes('記得帶護照'));
+    assert.ok(tl.includes('備註'), '備註標籤要是文字');
+    assert.ok(!tl.includes('✿'), '符號看不出是備註，已改成文字標籤');
   });
 });
 
