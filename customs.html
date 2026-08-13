@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Itinerary / 旅程表</title>
+<style>
+:root{--ink:#241f19;--ink-soft:#5e564c;--line:#c9c2b6;--paper:#fff;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#e8e4dc;color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Helvetica Neue",Arial,sans-serif;line-height:1.6;padding:24px 12px;}
+.sheet{background:var(--paper);max-width:190mm;margin:0 auto;padding:16mm 14mm;box-shadow:0 2px 12px rgba(0,0,0,.12);}
+h1{font-size:20px;letter-spacing:.04em;}
+.period{color:var(--ink-soft);font-size:13px;margin-top:4px;}
+h2{font-size:12px;letter-spacing:.12em;color:var(--ink-soft);border-bottom:1px solid var(--line);padding-bottom:4px;margin:22px 0 10px;}
+.flight{display:flex;gap:10px;font-size:13px;padding:3px 0;}
+.flight .kind{min-width:150px;font-weight:700;}
+.stay{padding:9px 0;border-bottom:1px dotted var(--line);}
+.stay:last-child{border-bottom:none;}
+.when{font-size:13px;font-weight:700;}
+.when .nights{font-weight:400;color:var(--ink-soft);}
+.name{font-size:14px;margin-top:2px;}
+.addr,.tel{font-size:13px;color:var(--ink-soft);}
+#status{max-width:190mm;margin:12px auto;padding:10px 14px;background:#fdecea;color:#8a2418;border:1px solid #e8b4ad;font-size:13px;display:none;}
+#print{display:block;margin:16px auto;padding:9px 22px;font-size:14px;cursor:pointer;}
+@media print{
+  body{background:#fff;padding:0;}
+  .sheet{box-shadow:none;max-width:none;padding:0;}
+  #print,#status{display:none !important;}
+  @page{size:A4 portrait;margin:14mm;}
+}
+</style>
+</head>
+<body>
+<div class="sheet">
+ <h1>ITINERARY ／ 旅程表</h1>
+ <div class="period" id="period"></div>
+ <h2>FLIGHT ／ 航空便</h2>
+ <div id="flights"></div>
+ <h2>ACCOMMODATION ／ 宿泊先</h2>
+ <div id="stays"></div>
+</div>
+<div id="status"></div>
+<button id="print" onclick="window.print()">列印 ／ 印刷</button>
+
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script>
+/* 設定與 index.html 共用同一份 config.js */
+const CFG=(typeof window!=='undefined'&&window.TRIP_CONFIG)||{};
+const FIREBASE_CONFIG=CFG.firebase||{};
+const TRIP_ID=CFG.tripId||'PASTE_YOUR_TRIP_ID';
+const FB_READY=(typeof firebase!=='undefined')&&FIREBASE_CONFIG.databaseURL&&FIREBASE_CONFIG.databaseURL.indexOf('PASTE')===-1;
+
+/* Firebase 上的舊資料仍可能是 {zh,en,ja} 物件，與 index.html 的 t() 同義 */
+const t=o=>o==null?'':(typeof o==='string'?o:(o.zh||''));
+function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+const FLIGHTS=[
+ {kind:'ARRIVAL ／ 到着',no:'CX530',date:'10/21',time:'15:30',airport:'NGO Chubu Centrair'},
+ {kind:'DEPARTURE ／ 出発',no:'CX531',date:'11/04',time:'16:40',airport:'NGO Chubu Centrair'}
+];
+
+/* key 是行程資料裡的住宿名稱（Firebase 上的 stay 欄）。
+   skip:true 代表不是在日住宿，不列入宿泊先——與「查無此筆」是兩條不同的路徑，
+   查無此筆要顯示未登録提醒使用者補，不能被靜默跳過。
+
+   高山那筆：行程上寫的「Tabino Hotel Satellite」其實是高山站前的行李寄放兼接駁據點，
+   訂房確認信上的住宿是「たびのホテルBase高山駅前」。這裡的 key 必須跟著行程資料走，
+   若日後在 app 把名稱改正，key 也要一起改，否則會掉進未登録。 */
+const STAY_INFO={
+ '名古屋花園皇宮飯店':{en:'Nagoya Garden Palace Hotel',ja:'名古屋ガーデンパレス',addr:'〒460-0003 愛知県名古屋市中区錦3-11-13',tel:'052-957-1022'},
+ '富山地鐵飯店':{en:'Toyama Chitetsu Hotel',ja:'富山地鉄ホテル',addr:'〒930-0003 富山県富山市桜町1-1-1',tel:'076-442-6611'},
+ '東橫INN 松本站東口':{en:'Toyoko Inn Matsumoto Sta. East',ja:'東横INN松本駅東口',addr:'〒390-0815 長野県松本市深志1-1-4',tel:'0263-44-1045'},
+ 'Tabino Hotel Satellite':{en:'Tabino Hotel Base Takayama Station',ja:'たびのホテルBase高山駅前',addr:'〒506-0026 岐阜県高山市花里町6-36-1',tel:'0577-32-1155'},
+ '東橫INN 名古屋丸之內':{en:'Toyoko Inn Nagoya Marunouchi',ja:'東横INN名古屋丸の内',addr:'〒460-0002 愛知県名古屋市中区丸の内1-4-20',tel:'052-223-1045'},
+ '溫暖的家':{skip:true}
+};
+
+function groupStays(list){return [];}
+function renderStays(groups){return '';}
+function renderFlights(){return '';}
+</script>
+</body>
+</html>
