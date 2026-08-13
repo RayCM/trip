@@ -30,10 +30,17 @@ global.document = {
 global.window = { TRIP_CONFIG: undefined, addEventListener() {} };
 global.navigator = {};
 
+const store = {};
+global.localStorage = {
+  getItem: k => (k in store ? store[k] : null),
+  setItem: (k, v) => { store[k] = String(v); },
+  removeItem: k => { delete store[k]; },
+};
+
 // FB_READY 會是 false（沒有 window.TRIP_CONFIG、沒有 firebase），走「連不上」分支
 let ranWithoutThrow = true, thrown = null, R = null;
 try {
-  R = eval(app + '\n;({groupStays,renderStays,renderFlights,renderAll,STAY_INFO,FLIGHTS,t,esc})');
+  R = eval(app + '\n;({groupStays,renderStays,renderFlights,renderAll,renderWithFallback,loadCache,STAY_INFO,FLIGHTS,t,esc})');
 } catch (e) {
   ranWithoutThrow = false;
   thrown = e;
@@ -190,6 +197,39 @@ check('renderAll 收到正常資料時印出住宿與期間', () => {
   assert.ok(els['period'].textContent.includes('10/21'), '期間缺開始日');
   assert.ok(els['period'].textContent.includes('11/04'), '期間缺結束日');
   assert.ok(/15\s*days/.test(els['period'].textContent), '期間缺天數: ' + els['period'].textContent);
+});
+
+check('渲染成功後資料被存進離線快取', () => {
+  R.renderAll(DAYS);
+  const c = R.loadCache();
+  assert.ok(c && Array.isArray(c.list), '快取沒存到');
+  assert.strictEqual(c.list.length, 15);
+  assert.ok(c.at, '快取缺時間戳');
+});
+
+check('沒網路但有快取時，用快取渲染並標示離線', () => {
+  R.renderAll(DAYS); // 先製造一份快取
+  els['stays'].innerHTML = '';
+  els['status'].innerHTML = '';
+  const used = R.renderWithFallback('連不上資料庫');
+  assert.strictEqual(used, true, '有快取就該用它');
+  assert.ok(els['stays'].innerHTML.includes('Nagoya Garden Palace Hotel'), '沒有用快取渲染');
+  assert.ok(/離線/.test(els['status'].innerHTML), '沒標示這是離線資料: ' + els['status'].innerHTML);
+});
+
+check('離線標示會寫出快取的時間', () => {
+  R.renderAll(DAYS);
+  R.renderWithFallback('連不上資料庫');
+  assert.ok(/\d{4}\/\d{1,2}\/\d{1,2}/.test(els['status'].innerHTML),
+    '離線標示要看得出資料是什麼時候的: ' + els['status'].innerHTML);
+});
+
+check('沒網路也沒快取時不印住宿列', () => {
+  global.localStorage.removeItem('customs:cache'); // 與 customs.html 的 CACHE_KEY 同值
+  els['stays'].innerHTML = 'x';
+  const used = R.renderWithFallback('連不上資料庫');
+  assert.strictEqual(used, false, '沒快取就不該宣稱用了快取');
+  assert.strictEqual(els['stays'].innerHTML, '', '沒資料還印住宿列會誤導');
 });
 
 console.log(`\n${passed}/${total} passed`);

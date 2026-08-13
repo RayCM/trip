@@ -21,6 +21,8 @@ h2{font-size:12px;letter-spacing:.12em;color:var(--ink-soft);border-bottom:1px s
 .name{font-size:14px;margin-top:2px;}
 .addr,.tel{font-size:13px;color:var(--ink-soft);}
 #status{max-width:190mm;margin:12px auto;padding:10px 14px;background:#fdecea;color:#8a2418;border:1px solid #e8b4ad;font-size:13px;display:none;}
+/* 離線是「這份資料可能不是最新的」，不是錯誤，用另一種顏色以免看起來像壞掉 */
+#status.notice{background:#fdf6e3;color:#6b5320;border-color:#e3d5a8;}
 #print{display:block;margin:16px auto;padding:9px 22px;font-size:14px;cursor:pointer;}
 @media print{
   body{background:#fff;padding:0;}
@@ -120,14 +122,54 @@ function renderFlights(){
  ).join('');
 }
 
+function hideStatus(){
+ const el=document.getElementById('status');
+ el.innerHTML='';
+ el.style.display='none';
+}
 function showError(msg){
  const el=document.getElementById('status');
  el.innerHTML=msg;
+ el.className='';
+ el.style.display='block';
+}
+function showNotice(msg){
+ const el=document.getElementById('status');
+ el.innerHTML=msg;
+ el.className='notice';
  el.style.display='block';
 }
 
-/* 資料不完整時寧可整張不印，也不要印出一張缺了幾晚、看起來卻很完整的紙。 */
-function renderAll(list){
+/* 離線快取：機場或日本網路不通時，正是最需要這張表的時候，但那時讀不到 Firebase。
+   每次成功讀到就留一份，之後沒網路就用它，並在畫面上標明資料是什麼時候的。 */
+const CACHE_KEY='customs:cache';
+function saveCache(list){
+ try{localStorage.setItem(CACHE_KEY,JSON.stringify({at:new Date().toISOString(),list:list}));}catch(e){}
+}
+function loadCache(){
+ try{const v=localStorage.getItem(CACHE_KEY);return v?JSON.parse(v):null;}catch(e){return null;}
+}
+function fmtAt(iso){
+ const d=new Date(iso);
+ if(isNaN(d.getTime()))return '';
+ return d.getFullYear()+'/'+(d.getMonth()+1)+'/'+d.getDate()+' '+
+  String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+/* 讀不到即時資料時退回上次成功讀到的那份。回傳有沒有用上快取。 */
+function renderWithFallback(reason){
+ const c=loadCache();
+ if(c&&Array.isArray(c.list)&&c.list.length){
+  renderAll(c.list,true);
+  showNotice('<b>離線資料 ／ オフライン</b>　最後更新 '+esc(fmtAt(c.at))+'　（'+esc(reason)+'）');
+  return true;
+ }
+ renderAll([]);
+ return false;
+}
+
+/* 資料不完整時寧可整張不印，也不要印出一張缺了幾晚、看起來卻很完整的紙。
+   fromCache 為 true 代表資料本來就是從快取來的，不用再存一次。 */
+function renderAll(list,fromCache){
  document.getElementById('flights').innerHTML=renderFlights();
  if(!Array.isArray(list)||!list.length){
   document.getElementById('stays').innerHTML='';
@@ -139,12 +181,13 @@ function renderAll(list){
  document.getElementById('period').textContent=
   '2026/'+from+' – '+to+'　·　'+list.length+' days ／ '+list.length+'日間';
  document.getElementById('stays').innerHTML=renderStays(groupStays(list));
+ if(!fromCache)saveCache(list);
 }
 
 (function init(){
  if(!FB_READY){
-  renderAll([]);
-  showError('<b>連不上資料庫</b>　config.js 未設定或 Firebase SDK 沒載入，這張表沒有資料，請勿列印。');
+  if(!renderWithFallback('連不上資料庫'))
+   showError('<b>連不上資料庫</b>　config.js 未設定或 Firebase SDK 沒載入，這張表沒有資料，請勿列印。');
   return;
  }
  firebase.initializeApp(FIREBASE_CONFIG);
@@ -152,15 +195,18 @@ function renderAll(list){
  firebase.auth().onAuthStateChanged(function(user){
   if(!user)return;
   dbRef.once('value').then(function(snap){
-   renderAll(snap.val());
+   const list=snap.val();
+   if(Array.isArray(list)&&list.length){renderAll(list);hideStatus();return;}
+   if(!renderWithFallback('資料庫回傳空資料'))
+    showError('<b>讀不到行程資料</b>　資料庫是空的，請勿列印這張表。');
   }).catch(function(err){
-   renderAll([]);
-   showError('<b>讀取資料庫失敗</b>　'+esc(err&&err.message||'')+'　請勿列印這張表。');
+   if(!renderWithFallback('讀取資料庫失敗'))
+    showError('<b>讀取資料庫失敗</b>　'+esc(err&&err.message||'')+'　請勿列印這張表。');
   });
  });
  firebase.auth().signInAnonymously().catch(function(e){
-  renderAll([]);
-  showError('<b>匿名登入失敗</b>　'+esc(e&&e.message||'')+'　請勿列印這張表。');
+  if(!renderWithFallback('匿名登入失敗'))
+   showError('<b>匿名登入失敗</b>　'+esc(e&&e.message||'')+'　請勿列印這張表。');
  });
 })();
 </script>
