@@ -162,4 +162,13 @@ check('飯店名有 HTML 特殊字元時被跳脫', () => {
   assert.ok(h.includes('&lt;script&gt;'), '應該跳脫成實體');
 });
 
+check('航班兩行都印出班次、日期、時間、機場', () => {
+  const h = R.renderFlights();
+  assert.ok(h.includes('CX530') && h.includes('CX531'), '缺班次');
+  assert.ok(h.includes('10/21') && h.includes('11/04'), '缺日期');
+  assert.ok(h.includes('15:30') && h.includes('16:40'), '缺時間');
+  assert.ok(h.includes('NGO'), '缺機場');
+  assert.ok(h.includes('ARRIVAL') && h.includes('到着'), '缺雙語標籤');
+});
+
 console.log(`\n${passed}/${total} passed`);

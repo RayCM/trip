@@ -110,7 +110,13 @@ function renderStays(groups){
    '</div>';
  }).join('');
 }
-function renderFlights(){return '';}
+function renderFlights(){
+ return FLIGHTS.map(f=>
+  '<div class="flight"><span class="kind">'+esc(f.kind)+'</span>'+
+  '<span>'+esc(f.no)+'</span><span>'+esc(f.date)+'</span>'+
+  '<span>'+esc(f.time)+'</span><span>'+esc(f.airport)+'</span></div>'
+ ).join('');
+}
 </script>
 </body>
 </html>
