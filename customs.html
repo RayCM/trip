@@ -91,7 +91,25 @@ function groupStays(list){
  });
  return groups.filter(g=>{const i=STAY_INFO[g.name];return !(i&&i.skip);});
 }
-function renderStays(groups){return '';}
+/* 查無登記的住宿仍要列出來，地址電話標未登録——少印一段比印出一張看似完整、
+   實際漏掉好幾晚的紙難被發現。 */
+function renderStays(groups){
+ const NOT_REG='未登録 ／ not registered';
+ return (groups||[]).map(g=>{
+  const i=STAY_INFO[g.name]||null;
+  const name=i&&i.en?(i.en+' ／ '+i.ja):g.name;
+  const addr=i&&i.addr?i.addr:NOT_REG;
+  const tel=i&&i.tel?('TEL '+i.tel):NOT_REG;
+  const when=g.from===g.to?g.from:(g.from+' – '+g.to);
+  const nights=g.nights+(g.nights===1?' night':' nights')+' ／ '+g.nights+'泊';
+  return '<div class="stay">'+
+   '<div class="when">'+esc(when)+'　<span class="nights">'+esc(nights)+'</span></div>'+
+   '<div class="name">'+esc(name)+'</div>'+
+   '<div class="addr">'+esc(addr)+'</div>'+
+   '<div class="tel">'+esc(tel)+'</div>'+
+   '</div>';
+ }).join('');
+}
 function renderFlights(){return '';}
 </script>
 </body>

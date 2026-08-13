@@ -126,4 +126,40 @@ check('住宿欄空白的日子被略過，不產生無名分段', () => {
   assert.strictEqual(g[0].nights, 1);
 });
 
+check('住宿列印出英日名、地址與電話', () => {
+  const h = R.renderStays(R.groupStays(DAYS));
+  assert.ok(h.includes('Nagoya Garden Palace Hotel'), '缺英文名');
+  assert.ok(h.includes('名古屋ガーデンパレス'), '缺日文名');
+  assert.ok(h.includes(R.STAY_INFO['名古屋花園皇宮飯店'].addr), '缺地址');
+  assert.ok(h.includes(R.STAY_INFO['名古屋花園皇宮飯店'].tel), '缺電話');
+});
+
+check('日期區間與晚數都印出來', () => {
+  const h = R.renderStays(R.groupStays(DAYS));
+  assert.ok(h.includes('10/25 – 10/28'), '缺日期區間');
+  assert.ok(h.includes('4 nights'), '缺晚數');
+  assert.ok(h.includes('4泊'), '缺日文晚數');
+});
+
+check('只住一晚時用單數 night 且不印區間', () => {
+  const h = R.renderStays(R.groupStays([{ date: '10/21', stay: '富山地鐵飯店' }]));
+  assert.ok(h.includes('1 night ／ 1泊'), '單數形式不對: ' + h);
+  assert.ok(!h.includes('–'), '單日不該印日期區間');
+});
+
+check('飯店沒登記在 STAY_INFO 時仍列出該段並標未登録', () => {
+  const h = R.renderStays(R.groupStays([
+    { date: '10/21', stay: '某某新飯店' }, { date: '10/22', stay: '某某新飯店' },
+  ]));
+  assert.ok(h.includes('某某新飯店'), '飯店名不該消失');
+  assert.ok(h.includes('未登録'), '應該標示未登録');
+  assert.ok(h.includes('2 nights'), '晚數仍要算');
+});
+
+check('飯店名有 HTML 特殊字元時被跳脫', () => {
+  const h = R.renderStays(R.groupStays([{ date: '10/21', stay: '<script>x</script>' }]));
+  assert.ok(!h.includes('<script>x'), '沒有跳脫: ' + h);
+  assert.ok(h.includes('&lt;script&gt;'), '應該跳脫成實體');
+});
+
 console.log(`\n${passed}/${total} passed`);
