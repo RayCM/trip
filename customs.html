@@ -78,7 +78,19 @@ const STAY_INFO={
  '溫暖的家':{skip:true}
 };
 
-function groupStays(list){return [];}
+/* 連續住同一間的日子併成一段。晚數＝該段的天數（最後一天仍住在那裡）。
+   標了 skip 的（回程日的「溫暖的家」）不列入宿泊先；查無此筆的仍要列出，交給 renderStays 標未登録。 */
+function groupStays(list){
+ const groups=[];
+ (list||[]).forEach(d=>{
+  const name=t(d&&d.stay);
+  if(!name)return; // 住宿欄空白的日子跳過，不產生無名分段
+  const last=groups[groups.length-1];
+  if(last&&last.name===name){last.to=d.date;last.nights++;}
+  else groups.push({name:name,from:d.date,to:d.date,nights:1});
+ });
+ return groups.filter(g=>{const i=STAY_INFO[g.name];return !(i&&i.skip);});
+}
 function renderStays(groups){return '';}
 function renderFlights(){return '';}
 </script>

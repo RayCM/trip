@@ -73,4 +73,57 @@ check('航班有進出境兩筆', () => {
   assert.strictEqual(R.FLIGHTS[1].no, 'CX531');
 });
 
+// 15 天的真實行程形狀（只留分組需要的欄位）
+const DAYS = [
+  { date: '10/21', stay: '名古屋花園皇宮飯店' }, { date: '10/22', stay: '名古屋花園皇宮飯店' },
+  { date: '10/23', stay: '富山地鐵飯店' }, { date: '10/24', stay: '富山地鐵飯店' },
+  { date: '10/25', stay: '東橫INN 松本站東口' }, { date: '10/26', stay: '東橫INN 松本站東口' },
+  { date: '10/27', stay: '東橫INN 松本站東口' }, { date: '10/28', stay: '東橫INN 松本站東口' },
+  { date: '10/29', stay: 'Tabino Hotel Satellite' }, { date: '10/30', stay: 'Tabino Hotel Satellite' },
+  { date: '10/31', stay: 'Tabino Hotel Satellite' },
+  { date: '11/01', stay: '東橫INN 名古屋丸之內' }, { date: '11/02', stay: '東橫INN 名古屋丸之內' },
+  { date: '11/03', stay: '東橫INN 名古屋丸之內' },
+  { date: '11/04', stay: '溫暖的家' },
+];
+
+check('連續住同一間併成一段，晚數正確', () => {
+  const g = R.groupStays(DAYS);
+  assert.strictEqual(g.length, 5, '應該是 5 段（溫暖的家不算），實際 ' + g.length);
+  assert.deepStrictEqual(g.map(x => x.nights), [2, 2, 4, 3, 3]);
+  assert.strictEqual(g[0].from, '10/21');
+  assert.strictEqual(g[0].to, '10/22');
+  assert.strictEqual(g[2].from, '10/25');
+  assert.strictEqual(g[2].to, '10/28');
+});
+
+check('11/04 溫暖的家不列入宿泊先', () => {
+  const g = R.groupStays(DAYS);
+  assert.ok(!g.some(x => x.name === '溫暖的家'), '溫暖的家不該出現');
+});
+
+check('同一間飯店分成不相鄰的兩段時不會被併起來', () => {
+  const g = R.groupStays([
+    { date: '10/21', stay: 'A' }, { date: '10/22', stay: 'B' }, { date: '10/23', stay: 'A' },
+  ]);
+  assert.strictEqual(g.length, 3);
+  assert.deepStrictEqual(g.map(x => x.nights), [1, 1, 1]);
+});
+
+check('住宿名稱是舊的 {zh,url} 物件時也能分組', () => {
+  const g = R.groupStays([
+    { date: '10/21', stay: { zh: '富山地鐵飯店', url: 'https://maps.example/x' } },
+    { date: '10/22', stay: '富山地鐵飯店' },
+  ]);
+  assert.strictEqual(g.length, 1, '物件與字串是同一間，應該併成一段');
+  assert.strictEqual(g[0].nights, 2);
+});
+
+check('住宿欄空白的日子被略過，不產生無名分段', () => {
+  const g = R.groupStays([
+    { date: '10/21', stay: '富山地鐵飯店' }, { date: '10/22', stay: '' }, { date: '10/23' },
+  ]);
+  assert.strictEqual(g.length, 1);
+  assert.strictEqual(g[0].nights, 1);
+});
+
 console.log(`\n${passed}/${total} passed`);
