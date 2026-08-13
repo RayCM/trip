@@ -220,6 +220,8 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
 .add-day{width:100%;margin-top:4px;appearance:none;border:1.5px dashed var(--cedar);background:#f3f6f1;cursor:pointer;font-family:var(--sans);font-size:14.5px;font-weight:700;color:var(--cedar);padding:13px;border-radius:12px;transition:.15s}
 .add-day:hover{background:#ebf1e8}
 .add-day:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
+.customs-link{display:block;margin-top:8px;text-align:center;text-decoration:none;font-size:13.5px;color:var(--ink-faint);padding:11px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.customs-link:hover{color:var(--ink-soft);border-color:var(--ink-faint)}
 .sheet-btn{width:100%;margin-top:8px;appearance:none;border:1.5px dashed var(--slate);background:#eef2f5;cursor:pointer;font-family:var(--sans);font-size:14.5px;font-weight:700;color:var(--slate);padding:13px;border-radius:12px;transition:.15s}
 .sheet-btn:hover{background:#e4eaef}
 .sheet-btn:disabled{opacity:.55;cursor:default}
@@ -293,6 +295,7 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
     <div class="timeline" id="timeline"></div>
     <button class="add-day" id="add-day" onclick="openDayForm()" style="display:none"></button>
     <button class="sheet-btn" id="sheet-import" onclick="openSheetImport()" style="display:none">⇩ 從試算表更新</button>
+    <a class="customs-link" href="customs.html">🛂 入境用摘要（英／日）</a>
   </section>
 
   <section class="panel" id="p-exp" role="tabpanel" aria-labelledby="tab-exp">

@@ -129,6 +129,12 @@ check('行程頁：住宿 Google Maps 連結還在（STAY.url 沒被壓平弄丟
   assert.ok(links.length >= 14, '住宿連結只有 ' + links.length + ' 個，應該至少 14 個（15 天扣掉最後一天「溫暖的家」）');
 });
 
+check('行程頁：有入境用摘要頁的入口', () => {
+  // 連結是靜態 HTML，不經過 renderTimeline，所以直接檢查原始碼
+  assert.ok(/href=["']customs\.html["']/.test(src), '缺少通往 customs.html 的連結');
+  assert.ok(/入境/.test(src), '入口要看得懂是做什麼用的');
+});
+
 check('行程頁：住宿名稱是中文', () => {
   const tl = html('timeline');
   ['名古屋花園皇宮飯店', '富山地鐵飯店', '東橫INN 松本站東口', '溫暖的家'].forEach(n =>
