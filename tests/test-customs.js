@@ -59,7 +59,7 @@ check('整段 script 載入並執行不拋錯', () => {
 
 check('五間住宿都有地址與電話，溫暖的家標記為 skip', () => {
   ['名古屋花園皇宮飯店', '富山地鐵飯店', '東橫INN 松本站東口',
-   'Tabino Hotel Satellite', '東橫INN 名古屋丸之內'].forEach(n => {
+   'たびのホテルBase高山駅前', '東橫INN 名古屋丸之內'].forEach(n => {
     const i = R.STAY_INFO[n];
     assert.ok(i, '缺少 ' + n);
     assert.ok(i.en && i.ja, n + ' 缺英文或日文名');
@@ -86,8 +86,8 @@ const DAYS = [
   { date: '10/23', stay: '富山地鐵飯店' }, { date: '10/24', stay: '富山地鐵飯店' },
   { date: '10/25', stay: '東橫INN 松本站東口' }, { date: '10/26', stay: '東橫INN 松本站東口' },
   { date: '10/27', stay: '東橫INN 松本站東口' }, { date: '10/28', stay: '東橫INN 松本站東口' },
-  { date: '10/29', stay: 'Tabino Hotel Satellite' }, { date: '10/30', stay: 'Tabino Hotel Satellite' },
-  { date: '10/31', stay: 'Tabino Hotel Satellite' },
+  { date: '10/29', stay: 'たびのホテルBase高山駅前' }, { date: '10/30', stay: 'たびのホテルBase高山駅前' },
+  { date: '10/31', stay: 'たびのホテルBase高山駅前' },
   { date: '11/01', stay: '東橫INN 名古屋丸之內' }, { date: '11/02', stay: '東橫INN 名古屋丸之內' },
   { date: '11/03', stay: '東橫INN 名古屋丸之內' },
   { date: '11/04', stay: '溫暖的家' },

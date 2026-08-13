@@ -70,14 +70,14 @@ const FLIGHTS=[
    skip:true 代表不是在日住宿，不列入宿泊先——與「查無此筆」是兩條不同的路徑，
    查無此筆要顯示未登録提醒使用者補，不能被靜默跳過。
 
-   高山那筆：行程上寫的「Tabino Hotel Satellite」其實是高山站前的行李寄放兼接駁據點，
-   訂房確認信上的住宿是「たびのホテルBase高山駅前」。這裡的 key 必須跟著行程資料走，
-   若日後在 app 把名稱改正，key 也要一起改，否則會掉進未登録。 */
+   key 必須與 Firebase 上的 stay 一字不差。在 app 或試算表改了住宿名稱，這裡要跟著改，
+   否則那幾晚會掉進未登録。（高山那筆原本寫成「Tabino Hotel Satellite」——那是高山站前
+   的行李寄放兼接駁據點，不是住宿設施，已依訂房確認信改為たびのホテルBase高山駅前。） */
 const STAY_INFO={
  '名古屋花園皇宮飯店':{en:'Nagoya Garden Palace Hotel',ja:'名古屋ガーデンパレス',addr:'〒460-0003 愛知県名古屋市中区錦3-11-13',tel:'052-957-1022'},
  '富山地鐵飯店':{en:'Toyama Chitetsu Hotel',ja:'富山地鉄ホテル',addr:'〒930-0003 富山県富山市桜町1-1-1',tel:'076-442-6611'},
  '東橫INN 松本站東口':{en:'Toyoko Inn Matsumoto Sta. East',ja:'東横INN松本駅東口',addr:'〒390-0815 長野県松本市深志1-1-4',tel:'0263-44-1045'},
- 'Tabino Hotel Satellite':{en:'Tabino Hotel Base Takayama Station',ja:'たびのホテルBase高山駅前',addr:'〒506-0026 岐阜県高山市花里町6-36-1',tel:'0577-32-1155'},
+ 'たびのホテルBase高山駅前':{en:'Tabino Hotel Base Takayama Station',ja:'たびのホテルBase高山駅前',addr:'〒506-0026 岐阜県高山市花里町6-36-1',tel:'0577-32-1155'},
  '東橫INN 名古屋丸之內':{en:'Toyoko Inn Nagoya Marunouchi',ja:'東横INN名古屋丸の内',addr:'〒460-0002 愛知県名古屋市中区丸の内1-4-20',tel:'052-223-1045'},
  '溫暖的家':{skip:true}
 };
