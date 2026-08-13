@@ -24,9 +24,11 @@ h2{font-size:12px;letter-spacing:.12em;color:var(--ink-soft);border-bottom:1px s
 #print{display:block;margin:16px auto;padding:9px 22px;font-size:14px;cursor:pointer;}
 @media print{
   body{background:#fff;padding:0;}
-  .sheet{box-shadow:none;max-width:none;padding:0;}
+  /* 留白改由 .sheet 自己給：@page 的 margin 設 0 之後，瀏覽器沒有空間塞它自己的
+     頁首頁尾（列印日期、網頁標題、網址），不必依賴使用者去取消那個勾選項。 */
+  .sheet{box-shadow:none;max-width:none;padding:14mm;}
   #print,#status{display:none !important;}
-  @page{size:A4 portrait;margin:14mm;}
+  @page{size:A4 portrait;margin:0;}
 }
 </style>
 </head>
