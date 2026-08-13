@@ -131,7 +131,7 @@ check('行程頁：住宿 Google Maps 連結還在（STAY.url 沒被壓平弄丟
 
 check('行程頁：住宿名稱是中文', () => {
   const tl = html('timeline');
-  ['名古屋花園皇宮飯店', '富山地鐵飯店', '東橫 INN 松本站東口', '溫暖的家 ♡'].forEach(n =>
+  ['名古屋花園皇宮飯店', '富山地鐵飯店', '東橫INN 松本站東口', '溫暖的家'].forEach(n =>
     assert.ok(tl.includes(n), '缺少住宿 ' + n));
 });
 
@@ -180,7 +180,8 @@ check('記帳頁：分類名稱是中文', () => {
 
 check('記帳頁：交通預估說明文字正常且金額有算出來', () => {
   const sub = html('seed-sub') || text('seed-sub');
-  assert.ok(sub.includes('依官網最新票價估算 17 段交通'), '預估說明文字不對: ' + sub.slice(0, 80));
+  // 段數改成由 TRANSPORT_EST.length 帶出來，會隨行程增減，所以不綁死數字
+  assert.ok(/依官網最新票價估算 \d+ 段交通/.test(sub), '預估說明文字不對: ' + sub.slice(0, 80));
   assert.ok(/¥[\d,]+/.test(sub), '預估說明沒有算出金額: ' + sub.slice(0, 120));
 });
 

@@ -1,5 +1,6 @@
 // 用真實的試算表 CSV fixture 跑完整條流程：解析 → 轉換 → 比對 → 套用。
-// 起始資料用 index.html 裡的 DEFAULT_DAYS，模擬「app 有一份舊行程」的情境。
+// 起始資料用 index.html 裡的 DEFAULT_DAYS，fixture 則是另一版試算表，
+// 模擬「app 上的行程與試算表不一致」的情境（兩邊誰新誰舊不影響這裡要驗的匯入行為）。
 const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
@@ -48,9 +49,10 @@ check('解析真實試算表得到 15 天，沒有略過或重複', () => {
 check('與 DEFAULT_DAYS 比對，找得出已知的行程差異', () => {
   itinerary = JSON.parse(JSON.stringify(FN.DEFAULT_DAYS));
   const diffs = FN.diffSheet(parsed.days, itinerary);
-  const dest1024 = diffs.find(d => d.date === '10/24' && d.field === 'dest');
-  assert.ok(dest1024, '10/24 的目的地應該有差異');
-  assert.strictEqual(dest1024.to, '金澤車站、兼六園、近江町市場、東茶屋街');
+  // fixture 這版試算表把 10/27 排河口湖、10/28 排上高地，與 DEFAULT_DAYS 剛好對調
+  const dest1027 = diffs.find(d => d.date === '10/27' && d.field === 'dest');
+  assert.ok(dest1027, '10/27 的目的地應該有差異');
+  assert.strictEqual(dest1027.to, '新倉淺間神社、河口湖');
   assert.strictEqual(diffs.filter(d => d.kind === 'add').length, 0, '兩邊都是 10/21–11/04，不該有新增');
   assert.strictEqual(diffs.filter(d => d.kind === 'missing').length, 0, '不該有缺漏');
 });
@@ -79,7 +81,7 @@ check('套用後 app 獨有欄位仍在（leaf / r）', () => {
 });
 
 check('套用後住宿的 Google Maps 連結一個都沒少', () => {
-  // DEFAULT_DAYS 的 stay 是 {zh,url} 物件，覆蓋成字串會讓連結消失（實測會掉 10 個）
+  // 住宿名稱被試算表覆蓋時，頂層 stayUrl 不能跟著不見（舊的 {zh,url} 物件形式在 test-sheet-import 驗）
   itinerary = JSON.parse(JSON.stringify(FN.DEFAULT_DAYS));
   const linkOf = d => d.stayUrl || (d.stay && typeof d.stay === 'object' ? d.stay.url : '') || '';
   const before = itinerary.map(d => ({ date: d.date, url: linkOf(d) }));

@@ -14,7 +14,7 @@ if (start < 0 || end < 0 || end <= start) {
 const block = src.slice(start, end);
 
 // eval 後把需要的常數回傳出來（const 在 eval 內是區塊作用域，必須用尾端運算式取值）
-const D = eval(block + '\n;({WD,UI,STAY,DEFAULT_DAYS,TODOS,CATS,TRANSPORT_EST,L_E5489,L_HWB})');
+const D = eval(block + '\n;({WD,UI,STAY,DEFAULT_DAYS,TODOS,CATS,TRANSPORT_EST,L_HWB})');
 
 // 語系物件與純字串都解析成中文
 const s = o => o == null ? '' : (typeof o === 'string' ? o : (o.zh || ''));
@@ -29,7 +29,6 @@ const snap = {
   UI_regionKey: arr(D.UI.regionKey),
   UI: Object.keys(D.UI).filter(k => !LANG_KEYS.includes(k)).sort()
     .reduce((acc, k) => { acc[k] = s(D.UI[k]); return acc; }, {}),
-  L_E5489: s(D.L_E5489),
   L_HWB: s(D.L_HWB),
   STAY: Object.keys(D.STAY).sort()
     .reduce((acc, k) => { acc[k] = { name: s(D.STAY[k]), url: D.STAY[k].url || '' }; return acc; }, {}),
@@ -37,7 +36,8 @@ const snap = {
     date: d.date, r: d.r, leaf: !!d.leaf,
     dest: s(d.dest), trans: s(d.trans), note: s(d.note),
     url: d.url || '', ulabel: s(d.ulabel),
-    stay: s(d.stay), stayUrl: (d.stay && d.stay.url) || '',
+    // 住宿可能是字串＋頂層 stayUrl（現行），也可能是舊的 {zh,url} 物件，取法與 renderTimeline 一致
+    stay: s(d.stay), stayUrl: d.stayUrl || (d.stay && d.stay.url) || '',
   })),
   TODOS: D.TODOS.map(x => ({
     id: x.id, due: x.due, time: x.time, url: x.url,
