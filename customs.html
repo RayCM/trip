@@ -117,6 +117,50 @@ function renderFlights(){
   '<span>'+esc(f.time)+'</span><span>'+esc(f.airport)+'</span></div>'
  ).join('');
 }
+
+function showError(msg){
+ const el=document.getElementById('status');
+ el.innerHTML=msg;
+ el.style.display='block';
+}
+
+/* 資料不完整時寧可整張不印，也不要印出一張缺了幾晚、看起來卻很完整的紙。 */
+function renderAll(list){
+ document.getElementById('flights').innerHTML=renderFlights();
+ if(!Array.isArray(list)||!list.length){
+  document.getElementById('stays').innerHTML='';
+  document.getElementById('period').textContent='';
+  showError('<b>讀不到行程資料</b>　請確認網路連線與 config.js 設定，先不要列印這張表。');
+  return;
+ }
+ const from=list[0].date,to=list[list.length-1].date;
+ document.getElementById('period').textContent=
+  '2026/'+from+' – '+to+'　·　'+list.length+' days ／ '+list.length+'日間';
+ document.getElementById('stays').innerHTML=renderStays(groupStays(list));
+}
+
+(function init(){
+ if(!FB_READY){
+  renderAll([]);
+  showError('<b>連不上資料庫</b>　config.js 未設定或 Firebase SDK 沒載入，這張表沒有資料，請勿列印。');
+  return;
+ }
+ firebase.initializeApp(FIREBASE_CONFIG);
+ const dbRef=firebase.database().ref('trips/'+TRIP_ID+'/itinerary');
+ firebase.auth().onAuthStateChanged(function(user){
+  if(!user)return;
+  dbRef.once('value').then(function(snap){
+   renderAll(snap.val());
+  }).catch(function(err){
+   renderAll([]);
+   showError('<b>讀取資料庫失敗</b>　'+esc(err&&err.message||'')+'　請勿列印這張表。');
+  });
+ });
+ firebase.auth().signInAnonymously().catch(function(e){
+  renderAll([]);
+  showError('<b>匿名登入失敗</b>　'+esc(e&&e.message||'')+'　請勿列印這張表。');
+ });
+})();
 </script>
 </body>
 </html>

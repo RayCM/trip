@@ -33,7 +33,7 @@ global.navigator = {};
 // FB_READY 會是 false（沒有 window.TRIP_CONFIG、沒有 firebase），走「連不上」分支
 let ranWithoutThrow = true, thrown = null, R = null;
 try {
-  R = eval(app + '\n;({groupStays,renderStays,renderFlights,STAY_INFO,FLIGHTS,t,esc})');
+  R = eval(app + '\n;({groupStays,renderStays,renderFlights,renderAll,STAY_INFO,FLIGHTS,t,esc})');
 } catch (e) {
   ranWithoutThrow = false;
   thrown = e;
@@ -169,6 +169,27 @@ check('航班兩行都印出班次、日期、時間、機場', () => {
   assert.ok(h.includes('15:30') && h.includes('16:40'), '缺時間');
   assert.ok(h.includes('NGO'), '缺機場');
   assert.ok(h.includes('ARRIVAL') && h.includes('到着'), '缺雙語標籤');
+});
+
+check('沒有 Firebase 設定時顯示錯誤，且不產生任何住宿列', () => {
+  // eval 當下 FB_READY 就是 false，init 已經跑過
+  assert.ok(els['status'], '沒有 status 元素');
+  assert.ok(/連不上|設定/.test(els['status'].innerHTML), '錯誤訊息不明確: ' + els['status'].innerHTML);
+  assert.strictEqual((els['stays'] && els['stays'].innerHTML) || '', '', '不該印出住宿列');
+});
+
+check('renderAll 收到空陣列時顯示錯誤且不印表格', () => {
+  R.renderAll([]);
+  assert.strictEqual(els['stays'].innerHTML, '', '空資料不該印出住宿列');
+  assert.ok(els['status'].innerHTML.length > 0, '空資料應該有錯誤訊息');
+});
+
+check('renderAll 收到正常資料時印出住宿與期間', () => {
+  R.renderAll(DAYS);
+  assert.ok(els['stays'].innerHTML.includes('Nagoya Garden Palace Hotel'), '沒印出住宿');
+  assert.ok(els['period'].textContent.includes('10/21'), '期間缺開始日');
+  assert.ok(els['period'].textContent.includes('11/04'), '期間缺結束日');
+  assert.ok(/15\s*days/.test(els['period'].textContent), '期間缺天數: ' + els['period'].textContent);
 });
 
 console.log(`\n${passed}/${total} passed`);
