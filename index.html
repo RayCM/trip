@@ -73,6 +73,9 @@ main{padding-top:22px}
 .row{display:flex;gap:9px;font-size:13.5px;color:var(--ink-soft);margin-top:7px;line-height:1.55}
 /* min-width 要容得下最長的標籤（雨天備案 4 字），否則那列的內容會被推開、跟其他列對不齊 */
 .row .lbl{flex-shrink:0;color:var(--ink-faint);font-size:11px;font-weight:700;min-width:58px;letter-spacing:.03em;margin-top:2px}
+/* 試算表儲存格裡的換行匯入後是資料裡的 \n，HTML 預設會併成空白、整段擠在一起。
+   pre-line 讓 \n 斷行但仍合併多餘空白；只給內容那個 span，標籤不需要 */
+.row>span:not(.lbl){white-space:pre-line}
 /* 標籤一律用 .row .lbl 的灰色，四個標籤才是一致的一欄；用內容的顏色區分類型就夠了 */
 .note{color:var(--momiji);font-size:12.5px}
 /* 雨天備案：仿備註那列的形狀，但用藍灰而非紅葉色——兩者性質不同，同色會分不出來 */
