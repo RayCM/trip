@@ -535,7 +535,7 @@ function urlFor(t) {
 var MARKERS = {
   dji: ['__PRELOADED_STATE__', 'out_of_stock', 'on_sale'],
   pchome: ['ButtonType', 'SaleStatus'],
-  momo: ['加入購物車', '預購', '售完']
+  momo: ['此為預購商品', '加入購物車']
 };
 
 // 同一個 URL 只抓一次
@@ -545,7 +545,17 @@ targets.forEach(function (t) {
   var u = urlFor(t);
   if (seen[u.url]) { return; }
   seen[u.url] = true;
-  jobs.push({ source: t.source, url: u.url, kind: u.kind });
+  jobs.push({ source: t.source, url: u.url, kind: u.kind, optional: false });
+});
+
+// momo 目前不在 targets.json 裡（只有黃牛價的組合包，見 README），但解析器已備妥。
+// 這裡多抓一次純粹是為了知道 GitHub 的美國機房 IP 能不能抓到 momo（它有 Akamai 前置）。
+// 失敗不影響本探針的成敗判定，只是資訊——省掉日後想啟用 momo 時再跑一次這個關卡。
+jobs.push({
+  source: 'momo',
+  url: 'https://m.momoshop.com.tw/goods.momo?i_code=15508707',
+  kind: 'mobile',
+  optional: true
 });
 
 var failed = false;
@@ -558,11 +568,12 @@ jobs.reduce(function (chain, job) {
       var hits = MARKERS[job.source].map(function (m) {
         return m + '=' + (res.body.split(m).length - 1);
       }).join(' ');
-      console.log(job.source + '  http=' + res.status + '  ' + res.body.length + ' bytes  ' + hits);
-      if (res.status !== 200) { failed = true; }
+      console.log((job.optional ? '[選用] ' : '') + job.source + '  http=' + res.status +
+                  '  ' + res.body.length + ' bytes  ' + hits);
+      if (res.status !== 200 && !job.optional) { failed = true; }
     }).catch(function (e) {
-      console.log(job.source + '  失敗: ' + e.message);
-      failed = true;
+      console.log((job.optional ? '[選用] ' : '') + job.source + '  失敗: ' + e.message);
+      if (!job.optional) { failed = true; }
     });
   });
 }, Promise.resolve()).then(function () {
