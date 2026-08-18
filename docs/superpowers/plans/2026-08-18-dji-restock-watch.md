@@ -984,6 +984,25 @@ git commit -m "feat: PChome 解析器"
 
 ## Task 9: momo 解析器
 
+> **2026-08-18 依 Task 4 實測全面改寫。** 計畫原訂的規則是「頁面出現『預購』『售完』『補貨中』
+> 任一字樣就判 out」，**這條規則是壞的**：每一個 momo 商品頁的配送條款樣板都寫著
+> 「※若為預購商品，以下單日網頁公告之配送日期…」，所以裸字「預購」會在**現貨頁**上命中，
+> 把所有商品都判成缺貨。已用四個確定現貨的商品交叉驗證，並在 fixture 上做過反證測試：
+>
+> | 規則 | 在 `momo-in.html`（現貨衛生紙）的命中數 | 判定 |
+> |---|---|---|
+> | 裸字「預購」 | 1 | ❌ 誤判成缺貨 |
+> | 子字串「為預購商品」 | 1 | ❌ 誤判成缺貨 |
+> | **完整字串「此為預購商品」** | **0** | ✅ 正確 |
+>
+> 同時排除了兩個看似可用的訊號：`<meta name="product:availability">` 在四個預購樣本上
+> 全部是 `in stock`（無鑑別力）；購買按鈕的主要 CTA 條在現貨頁與預購頁**逐字元相同**
+> （`momo-out.html` 另含一組規格選擇 drawer 的按鈕，那是 PS5 要選版本才有的元件，
+> 與庫存狀態無關）。
+>
+> **「真正售完」的頁面找不到任何樣本**（搜到的「售完為止」全是促銷標語），因此那條路徑
+> 走 `unknown` 而非 `out`——不用零樣本猜出來的規則去冒充有信心的分類。
+
 **Files:**
 - Create: `tests/test-momo.js`
 - Create: `src/sources/momo.js`
@@ -1004,28 +1023,37 @@ function fixture(name) {
   return fs.readFileSync(path.join(__dirname, 'fixtures', name), 'utf8');
 }
 
-h.test('預購排單判定為 out', function () {
+h.test('預購商品判定為 out', function () {
   var r = momo.parse(fixture('momo-out.html'), {});
   h.assert.strictEqual(r.status, 'out');
 });
 
-h.test('現貨判定為 in', function () {
+h.test('現貨商品判定為 in', function () {
   var r = momo.parse(fixture('momo-in.html'), {});
   h.assert.strictEqual(r.status, 'in');
 });
 
-h.test('預購優先於加入購物車', function () {
-  // 預購商品同樣可以加入購物車，兩個字串會同時出現在頁面上。
-  // 若判斷順序反過來，機器人會把「預購排單」誤報成到貨——正是本專案最需要區分的狀態。
-  var html = '<div>預購</div><button>加入購物車</button>';
+h.test('現貨頁不可被配送條款樣板誤判為缺貨', function () {
+  // 這是本解析器存在的核心風險：momo 每一頁都有「※若為預購商品，以下單日網頁公告之
+  // 配送日期…」的樣板文字。實測 momo-in.html（確定是現貨的衛生紙）含「為預購商品」
+  // 1 次、裸字「預購」1 次——用那兩種簡化規則會把所有商品都判成缺貨。
+  var html = fixture('momo-in.html');
+  h.assert.ok(html.indexOf('為預購商品') >= 0, 'fixture 前提：現貨頁確實含「為預購商品」');
+  h.assert.strictEqual(momo.parse(html, {}).status, 'in');
+});
+
+h.test('只比對完整字串「此為預購商品」', function () {
+  var html = '<div>※若為預購商品，以下單日網頁公告之配送日期為準</div><button>加入購物車</button>';
+  h.assert.strictEqual(momo.parse(html, {}).status, 'in');
+});
+
+h.test('預購標記優先於購買按鈕', function () {
+  // 預購商品同樣可以加入購物車，兩者會同時出現在頁面上，順序不可顛倒。
+  var html = '<div>此為預購商品，訂單確認後，預計 2026/09/04出貨</div><button>加入購物車</button>';
   h.assert.strictEqual(momo.parse(html, {}).status, 'out');
 });
 
-h.test('售完判定為 out', function () {
-  h.assert.strictEqual(momo.parse('<div>售完</div>', {}).status, 'out');
-});
-
-h.test('三種標記都沒有時回 unknown，不可回 out', function () {
+h.test('兩種標記都沒有時回 unknown，不可回 out', function () {
   var r = momo.parse('<html><body>系統忙碌中</body></html>', {});
   h.assert.strictEqual(r.status, 'unknown');
 });
@@ -1048,21 +1076,27 @@ cd /Users/raychang/dji-restock-watch && node tests/test-momo.js
 ```js
 'use strict';
 
-// 順序有意義：預購商品的頁面同時有「預購」與「加入購物車」，
-// 必須先判缺貨標記，否則預購排單會被誤報成到貨。
-var OUT_MARKS = ['預購', '售完', '補貨中', '暫不供貨'];
-var IN_MARK = '加入購物車';
+// 判定依據全部來自 2026-08-18 對真實頁面的實測。改動前請先讀 tests/fixtures/momo-*.html
+// 與 tests/test-momo.js 裡的反證測試。
+//
+// 必須比對「完整」字串「此為預購商品」，不可簡化成「為預購商品」或裸字「預購」：
+// 每一個 momo 商品頁的配送條款樣板都有「※若為預購商品，以下單日網頁公告之配送日期…」，
+// 簡化規則會在現貨頁上命中，把所有商品都判成缺貨。
+var PREORDER_MARK = '此為預購商品';
+var BUY_MARK = '加入購物車';
 
 function parse(html, target) {
-  for (var i = 0; i < OUT_MARKS.length; i++) {
-    if (html.indexOf(OUT_MARKS[i]) >= 0) {
-      return { status: 'out', mark: OUT_MARKS[i] };
-    }
+  // 順序有意義：預購商品同樣可以加入購物車，兩個標記會同時出現。
+  if (html.indexOf(PREORDER_MARK) >= 0) {
+    return { status: 'out', mark: PREORDER_MARK };
   }
-  if (html.indexOf(IN_MARK) >= 0) {
+  if (html.indexOf(BUY_MARK) >= 0) {
     return { status: 'in' };
   }
-  return { status: 'unknown', reason: '頁面沒有任何庫存標記' };
+  // 「真正售完」的 momo 頁面目前找不到樣本，所以不假裝知道它長什麼樣。
+  // unknown 會維持前一狀態、不推播、failStreak + 1，連續 4 次才發告警——
+  // 比起用零樣本猜出來的規則判 out（那會把真正的補貨永久靜默吃掉）安全得多。
+  return { status: 'unknown', reason: '頁面沒有預購標記也沒有購買按鈕' };
 }
 
 module.exports = { parse: parse };
@@ -1074,18 +1108,18 @@ module.exports = { parse: parse };
 cd /Users/raychang/dji-restock-watch && node tests/test-momo.js
 ```
 
-預期：`test-momo: 5 passed, 0 failed`。
-
-**若「現貨判定為 in」這項失敗**（`momo-in.html` 裡別處也出現了「預購」兩字），把 `parse` 改成只在購買按鈕附近的區塊比對：先用 `html.indexOf('加入購物車')` 找到按鈕位置，取其前後各 2000 字元的區間，只在該區間內找 `OUT_MARKS`。改完重跑，兩項都要綠。
+預期：`test-momo: 6 passed, 0 failed`。
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add tests/test-momo.js src/sources/momo.js
-git commit -m "feat: momo 解析器（預購優先於加入購物車）"
+git commit -m "feat: momo 解析器（完整比對「此為預購商品」）"
 ```
 
----
+> **注意：`targets.json` 目前沒有 momo 目標**（momo 上只有黃牛價的組合包，見 Task 2 的決策紀錄）。
+> 這支解析器是為了日後 momo 出現純標準套裝賣場時能立刻啟用而寫的，寫完不會被實際執行。
+> 因此它的正確性**完全**依賴上面那組 fixture 測試——沒有 dry-run 會幫你發現問題。
 
 ## Task 10: 狀態機
 
