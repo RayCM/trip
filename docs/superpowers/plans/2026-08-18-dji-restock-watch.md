@@ -262,7 +262,10 @@ git commit -m "feat: 加入 momo 監控目標與商品編號掃描工具"
 > 安靜死掉；node 10 則會以 `status=200` 回傳半截頁面。另外非 2xx 回應原本被當成正常內容
 > 交給解析器，403 阻擋頁對 momo 那條「無關鍵字即判有貨」的規則會造成假到貨推播。
 >
-> 以下是修正並複審通過後的實際上線版本（commit `d9d774c`）。
+> 以下是實際上線版本。除了上述修正，Task 5 的 CI 連通性關卡又追加了一項：
+> `fetchText` 多一個選用的 `extraHeaders` 參數，用來送 DJI 的地區覆寫 cookie
+> （美國機房 IP 不帶它會被導去美國站然後 404，見 Task 5 與 Task 12 的說明）。
+> 轉址與重試路徑都必須把它傳下去，否則跟隨轉址後 cookie 就掉了。
 
 ```js
 'use strict';
@@ -286,16 +289,35 @@ var MAX_REDIRECTS = 3;
 var RETRY_DELAY_MS = 3000;
 var DEADLINE_MS = 15000;
 
+// extraHeaders 用來覆寫／補上個別目標需要的 header（例如 DJI 的地區 cookie，
+// 見下方 request() 的說明），其餘預設 header 維持不變。手寫迴圈而非
+// Object.assign 純粹是跟本檔案其餘部分的寫法一致，沒有相容性考量。
+function mergeHeaders(base, extra) {
+  var out = {};
+  var k;
+  for (k in base) { if (base.hasOwnProperty(k)) { out[k] = base[k]; } }
+  if (extra) {
+    for (k in extra) { if (extra.hasOwnProperty(k)) { out[k] = extra[k]; } }
+  }
+  return out;
+}
+
 // 只宣告 gzip/deflate，不要 br：Node v10 沒有 brotliDecompress。
-function request(url, ua, redirectsLeft) {
+//
+// extraHeaders（選用第四參數）：目前唯一用途是 DJI 的地區覆寫。DJI 會依請求
+// 來源 IP 的地理位置，把 /tw/ 開頭的網址轉址到沒有國碼前綴的頁面，而 Osmo
+// Pocket 4P 因 FCC 認證從未在美上市，於是在美國機房 IP 下轉址後 404。實測
+// 帶上 DJI 自己核發的 `region=TW` cookie 即可讓它依然回台灣站內容，且與台灣
+// 住宅 IP 逐位元組相同。調查過程與其他候選方案見 scripts/probe-dji-variants.js。
+function request(url, ua, redirectsLeft, extraHeaders) {
   return new Promise(function (resolve, reject) {
     var opts = urlLib.parse(url);
-    opts.headers = {
+    opts.headers = mergeHeaders({
       'User-Agent': ua,
       'Accept': 'text/html,application/json,*/*',
       'Accept-Encoding': 'gzip, deflate',
       'Accept-Language': 'zh-TW,zh;q=0.9'
-    };
+    }, extraHeaders);
 
     var req = https.get(opts, function (res) {
       var status = res.statusCode;
@@ -303,9 +325,11 @@ function request(url, ua, redirectsLeft) {
 
       // 只支援 https 轉址：轉址到 http:// 會以 ERR_INVALID_PROTOCOL 失敗（實測），
       // 失敗方式安全但該目標會永久抓不到，未來 debug 時不必對著 unknown 發呆。
+      // extraHeaders 要跟著轉址傳下去，否則跟隨轉址後 cookie 就掉了——
+      // 這正是我們要用 extraHeaders 解決的問題本身。
       if (status >= 300 && status < 400 && loc && redirectsLeft > 0) {
         res.resume();
-        resolve(request(urlLib.resolve(url, loc), ua, redirectsLeft - 1));
+        resolve(request(urlLib.resolve(url, loc), ua, redirectsLeft - 1, extraHeaders));
         return;
       }
 
@@ -363,12 +387,13 @@ function delay(ms) {
 }
 
 // 失敗重試一次。連兩次失敗才算真的失敗。
-function fetchText(url, kind) {
+// extraHeaders 是選用第三參數，不傳就是原本兩參數的呼叫方式，向後相容。
+function fetchText(url, kind, extraHeaders) {
   var ua = kind === 'mobile' ? UA.mobile : UA.desktop;
-  return request(url, ua, MAX_REDIRECTS).catch(function (e1) {
+  return request(url, ua, MAX_REDIRECTS, extraHeaders).catch(function (e1) {
     console.error('[http] 第一次失敗，3 秒後重試：' + url + ' -> ' + e1.message);
     return delay(RETRY_DELAY_MS).then(function () {
-      return request(url, ua, MAX_REDIRECTS);
+      return request(url, ua, MAX_REDIRECTS, extraHeaders);
     });
   });
 }
@@ -1601,7 +1626,15 @@ var PARSERS = {
 };
 
 function urlFor(t) {
-  if (t.source === 'dji') { return { url: t.url, kind: 'desktop' }; }
+  if (t.source === 'dji') {
+    // 這個 cookie 不能省。DJI 會依請求來源 IP 的地理位置改寫轉址目的地：
+    // GitHub Actions 的美國機房 IP 會被導去沒有 /tw/ 前綴的美國站，而 Osmo Pocket 4P
+    // 因 FCC 認證從未在美上市，於是 404——2026-08-18 的 CI 連通性探針實際踩到過。
+    // region 是 DJI 自己核發的 cookie（它另外用 ip_region 追蹤偵測到的位置，兩者分開），
+    // 帶上它等同於明確指定台灣店，實測內容與台灣住宅 IP 逐位元組相同。
+    // 詳見 scripts/probe-dji-variants.js 的調查結果。
+    return { url: t.url, kind: 'desktop', headers: { 'Cookie': 'region=TW' } };
+  }
   if (t.source === 'pchome') {
     return {
       url: 'https://ecapi.pchome.com.tw/ecshop/prodapi/v2/prod/button&id=' + t.prodId +
@@ -1619,7 +1652,7 @@ var prev = JSON.parse(fs.readFileSync(STATE_PATH, 'utf8'));
 var byUrl = {};
 targets.forEach(function (t) {
   var u = urlFor(t);
-  if (!byUrl[u.url]) { byUrl[u.url] = { kind: u.kind, targets: [] }; }
+  if (!byUrl[u.url]) { byUrl[u.url] = { kind: u.kind, headers: u.headers, targets: [] }; }
   byUrl[u.url].targets.push(t);
 });
 
@@ -1629,7 +1662,7 @@ var results = {};
 // 從「三個目標相加」壓成「最慢的那一個」，避免逼近 10 分鐘的排程間隔。
 Promise.all(Object.keys(byUrl).map(function (url) {
   var job = byUrl[url];
-  return http.fetchText(url, job.kind).then(function (res) {
+  return http.fetchText(url, job.kind, job.headers).then(function (res) {
     job.targets.forEach(function (t) {
       results[t.id] = PARSERS[t.source].parse(res.body, t);
     });
