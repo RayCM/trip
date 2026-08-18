@@ -238,6 +238,15 @@ git commit -m "feat: 加入 momo 監控目標與商品編號掃描工具"
 
 - [ ] **Step 1: 寫 `src/http.js`**
 
+> **2026-08-18 審查後修正。** 這段程式碼的初版有一個 Critical 缺陷，已由品質審查以本地
+> HTTPS 伺服器在 node v10 與 v20 上實測重現：回應中途斷線時，因為沒有掛 `res.on('error')`
+> 也沒檢查 `res.complete`，**node 20（GitHub Actions 實際跑的版本）會讓 Promise 永遠不 settle**
+> ——job 卡死、`state.json` 不寫、`failStreak` 不累加、「抓取異常」警報永遠不會響，機器人
+> 安靜死掉；node 10 則會以 `status=200` 回傳半截頁面。另外非 2xx 回應原本被當成正常內容
+> 交給解析器，403 阻擋頁對 momo 那條「無關鍵字即判有貨」的規則會造成假到貨推播。
+>
+> 以下是修正並複審通過後的實際上線版本（commit `d9d774c`）。
+
 ```js
 'use strict';
 
@@ -252,9 +261,13 @@ var UA = {
           '(KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 };
 
-var TIMEOUT_MS = 15000;
+// TIMEOUT_MS 必須小於 DEADLINE_MS，否則 deadline 永遠先觸發，下面那個 socket
+// 閒置逾時就成了永不執行的死碼，log 上也分不出「伺服器完全沒回應」與
+// 「傳到一半停住／慢速滴水」——這兩種故障的處置方式並不一樣。
+var TIMEOUT_MS = 10000;
 var MAX_REDIRECTS = 3;
 var RETRY_DELAY_MS = 3000;
+var DEADLINE_MS = 15000;
 
 // 只宣告 gzip/deflate，不要 br：Node v10 沒有 brotliDecompress。
 function request(url, ua, redirectsLeft) {
@@ -271,26 +284,55 @@ function request(url, ua, redirectsLeft) {
       var status = res.statusCode;
       var loc = res.headers.location;
 
+      // 只支援 https 轉址：轉址到 http:// 會以 ERR_INVALID_PROTOCOL 失敗（實測），
+      // 失敗方式安全但該目標會永久抓不到，未來 debug 時不必對著 unknown 發呆。
       if (status >= 300 && status < 400 && loc && redirectsLeft > 0) {
         res.resume();
         resolve(request(urlLib.resolve(url, loc), ua, redirectsLeft - 1));
         return;
       }
 
+      // 非 2xx（含轉址預算用完、3xx 無 Location）一律當失敗，不要把錯誤頁交給解析器。
+      // 拋錯會被 main.js 降級成 unknown（維持前一狀態、不推播），這是安全方向。
+      if (status < 200 || status >= 300) {
+        res.resume();
+        reject(new Error('HTTP ' + status + ': ' + url));
+        return;
+      }
+
       var chunks = [];
+      // 連線中途斷掉：v10 會照常觸發 'end'（半截 body），v20 則是 'end' 永不觸發。
+      // 兩條都必須擋，否則不是安靜回傳半截頁面，就是 Promise 永遠不 settle。
+      res.on('aborted', function () { reject(new Error('response aborted: ' + url)); });
+      res.on('error', reject);
       res.on('data', function (c) { chunks.push(c); });
       res.on('end', function () {
+        if (!res.complete) { reject(new Error('incomplete response: ' + url)); return; }
         var buf = Buffer.concat(chunks);
         var enc = String(res.headers['content-encoding'] || '').toLowerCase();
         var done = function (err, out) {
           if (err) { reject(err); return; }
+          // 寫死 UTF-8，目前三個目標都是 UTF-8，若未來新增 Big5 通路要在這裡處理。
           resolve({ status: status, body: out.toString('utf8') });
         };
         if (enc === 'gzip') { zlib.gunzip(buf, done); }
-        else if (enc === 'deflate') { zlib.inflate(buf, done); }
+        else if (enc === 'deflate') {
+          zlib.inflate(buf, function (err, out) {
+            if (err) { zlib.inflateRaw(buf, done); return; }   // 有些伺服器回 raw deflate
+            done(null, out);
+          });
+        }
         else { done(null, buf); }
       });
     });
+
+    // 總時長硬上限：setTimeout 只管 socket 閒置，擋不住慢速滴水的伺服器。
+    // 注意順序：先 reject 再 destroy。對已關閉的 request 呼叫 destroy(err) 不會發出 'error'。
+    var deadline = setTimeout(function () {
+      reject(new Error('deadline ' + DEADLINE_MS + 'ms exceeded: ' + url));
+      req.destroy();
+    }, DEADLINE_MS);
+    deadline.unref();
 
     req.setTimeout(TIMEOUT_MS, function () {
       req.destroy(new Error('timeout after ' + TIMEOUT_MS + 'ms: ' + url));
@@ -306,13 +348,15 @@ function delay(ms) {
 // 失敗重試一次。連兩次失敗才算真的失敗。
 function fetchText(url, kind) {
   var ua = kind === 'mobile' ? UA.mobile : UA.desktop;
-  return request(url, ua, MAX_REDIRECTS).catch(function () {
+  return request(url, ua, MAX_REDIRECTS).catch(function (e1) {
+    console.error('[http] 第一次失敗，3 秒後重試：' + url + ' -> ' + e1.message);
     return delay(RETRY_DELAY_MS).then(function () {
       return request(url, ua, MAX_REDIRECTS);
     });
   });
 }
 
+// fetchText 回傳的是 { status: Number, body: String } 物件，不是字串，呼叫端要自己取 .body。
 module.exports = { fetchText: fetchText, UA: UA };
 ```
 
@@ -487,6 +531,8 @@ var failed = false;
 
 jobs.reduce(function (chain, job) {
   return chain.then(function () {
+    // 注意：src/http.js 對非 2xx 一律 reject，所以 403／503 會走下面的 catch，
+    // 而不是以 res.status 回來——這正是我們要在 CI 上看到的訊號。
     return http.fetchText(job.url, job.kind).then(function (res) {
       var hits = MARKERS[job.source].map(function (m) {
         return m + '=' + (res.body.split(m).length - 1);
@@ -1513,20 +1559,20 @@ targets.forEach(function (t) {
 
 var results = {};
 
-Object.keys(byUrl).reduce(function (chain, url) {
-  return chain.then(function () {
-    var job = byUrl[url];
-    return http.fetchText(url, job.kind).then(function (res) {
-      job.targets.forEach(function (t) {
-        results[t.id] = PARSERS[t.source].parse(res.body, t);
-      });
-    }).catch(function (e) {
-      job.targets.forEach(function (t) {
-        results[t.id] = { status: 'unknown', reason: '抓取失敗: ' + e.message };
-      });
+// 三個目標是三個不同網站，並行抓取不算失禮，而且能把最壞情況的總時長
+// 從「三個目標相加」壓成「最慢的那一個」，避免逼近 10 分鐘的排程間隔。
+Promise.all(Object.keys(byUrl).map(function (url) {
+  var job = byUrl[url];
+  return http.fetchText(url, job.kind).then(function (res) {
+    job.targets.forEach(function (t) {
+      results[t.id] = PARSERS[t.source].parse(res.body, t);
+    });
+  }).catch(function (e) {
+    job.targets.forEach(function (t) {
+      results[t.id] = { status: 'unknown', reason: '抓取失敗: ' + e.message };
     });
   });
-}, Promise.resolve()).then(function () {
+})).then(function () {
   targets.forEach(function (t) {
     var r = results[t.id];
     console.log(t.id + '  ' + r.status + (r.reason ? '  (' + r.reason + ')' : '') +
@@ -1623,6 +1669,10 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # 第二道保險：程式內已有 15 秒的單次請求硬上限，這裡再擋一次整個 job 卡住的情況。
+    # 注意這只止血不治本——job 被砍掉一樣不會寫 state、不會累加 failStreak，
+    # 所以程式內的 deadline 才是主要防線。
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
