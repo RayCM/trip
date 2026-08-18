@@ -145,6 +145,23 @@ gh repo create dji-restock-watch --public --source=. --remote=origin --push
 
 ## Task 2: 找出 momo 的商品編號
 
+> **2026-08-18 執行結果與決策變更。** 掃描確認 momo 上**沒有**純「Osmo Pocket 4P 標準套裝」
+> 賣場：全站【DJI】開頭的 4P 賣場只有三個，全部是主機＋配件的組合包（`15508707` 標準套裝
+> 組合包、`15582981`／`15582982` Vlog 套裝組合包）。兩位審查者各自用 5–7 組關鍵字交叉驗證，
+> 結論一致。
+>
+> 組合包售價高於官方定價 NT$19,290，多出來的是配件錢——使用者要買的是純標準套裝，因此
+> **決定不監控 momo 組合包**（commit `b54ff94` 已移除該目標）。盯著它只會在半夜把人叫醒去
+> 買不想買的東西。
+>
+> 但 **Task 9 的 momo 解析器仍要照計畫實作**，只是 `targets.json` 裡暫時沒有 momo 目標。
+> 日後 momo 若出現純標準套裝賣場，重跑 `scripts/find-momo-icode.js` 找出編號、在
+> `targets.json` 加一筆即可啟用，不必再寫程式。
+>
+> 連帶影響：**CI 連通性探針（Task 5）因此只會測到 DJI 與 PChome 兩家**，momo 從 GitHub
+> 機房 IP 是否抓得到並未驗證。日後要啟用 momo 時，記得先把 momo 目標加進 `targets.json`
+> 再跑一次探針確認連通性。
+
 momo 的搜尋頁與分類頁都是前端渲染，`curl` 只拿得到前幾筆廣告位。已驗證可用的路徑是**商品頁本身**（`m.momoshop.com.tw/goods.momo?i_code=N` 是伺服器端渲染，標題抓得到）。所以做法是：撈出候選編號 → 逐一開商品頁比對標題。
 
 **Files:**
@@ -447,8 +464,12 @@ JOBS.reduce(function (chain, job) {
 
 ```bash
 cd /Users/raychang/dji-restock-watch
-MOMO_OUT_ICODE=<4P的i_code> MOMO_IN_ICODE=<任一現貨商品的i_code> node scripts/save-fixtures.js
+MOMO_OUT_ICODE=15508707 MOMO_IN_ICODE=<任一現貨商品的i_code> node scripts/save-fixtures.js
 ```
+
+`MOMO_OUT_ICODE` 用 `15508707`（DJI 的 4P 組合包賣場）。**雖然已決定不監控這個賣場，
+但它仍是取得「缺貨態」momo 頁面最合適的來源**——解析器與商品無關（吃字串吐狀態），
+fixture 只是用來釘住解析規則。
 
 預期輸出五行，每行 `http=200` 且 bytes 為合理大小（DJI 約 70 萬、PChome 約 200、momo 約 3 萬）。
 
