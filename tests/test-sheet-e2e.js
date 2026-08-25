@@ -64,7 +64,7 @@ check('全部套用後，行程內容與試算表一致', () => {
   parsed.days.forEach(sd => {
     const day = itinerary.find(d => d.date === sd.date);
     assert.ok(day, '找不到 ' + sd.date);
-    ['dest', 'trans', 'stay', 'note', 'url', 'rain', 'ref'].forEach(f => {
+    ['dest', 'trans', 'stay', 'note', 'url', 'rain', 'ref', 'detail'].forEach(f => {
       assert.strictEqual(FN.t(day[f]), sd[f], `${sd.date} 的 ${f} 不一致`);
     });
   });
@@ -145,6 +145,15 @@ check('端對端：拿掉雨天備案欄不會產生清空差異', () => {
   const diffs = FN.diffSheet(p2.days, itinerary, p2.presentCols);
   assert.strictEqual(diffs.filter(x => x.field === 'rain').length, 0,
     '欄位從試算表被移除，不等於要清空 app 上已有的資料');
+});
+
+check('端對端：行程詳細版從試算表貫穿到行程資料', () => {
+  itinerary = JSON.parse(JSON.stringify(FN.DEFAULT_DAYS));
+  FN.applySheetDiff(FN.diffSheet(parsed.days, itinerary, parsed.presentCols));
+  const d1025 = itinerary.find(d => d.date === '10/25');
+  assert.ok(d1025.detail && d1025.detail.indexOf('http') === 0, '10/25 應有詳細版網址');
+  const others = itinerary.filter(d => d.date !== '10/25' && d.detail);
+  assert.deepStrictEqual(others, [], '其餘 14 天不該有值');
 });
 
 check('端對端：未使用的欄位會被回報', () => {

@@ -50,3 +50,5 @@ node tests/i18n-snapshot.js > tests/baseline.json
   ```
 
   `SHEET_ID` 與 `SHEET_GID` 的值在 `index.html` 裡。
+
+  **⚠️ 欄位變動時只補欄，不要整份重抓。** `test-sheet-e2e.js` 的前提是 fixture 的內容與 `DEFAULT_DAYS` **不一致**（它斷言 fixture 的 10/27 是河口湖、而 `DEFAULT_DAYS` 的 10/27 是上高地），用來驗差異比對與套用。repo 與試算表同步之後整份重抓，會讓 fixture 與 `DEFAULT_DAYS` 一模一樣，差異測試就沒有東西可比、等於被掏空。fixture 的職責是「欄位結構正確、但內容與 app 不同的一份試算表」，不是試算表的即時鏡像。上面的 `curl` 只適用於「fixture 本來就該整份換掉」的情況。
