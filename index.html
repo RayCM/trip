@@ -464,6 +464,21 @@ function applySnapshot(d){
 }
 function clone(x){return JSON.parse(JSON.stringify(x));}
 
+/* 離線備援。Firebase Realtime Database 的網頁版 SDK 沒有磁碟持久化，冷啟動又連不上
+   就什麼都收不到；而 pushShared/pushField 在有 dbRef 時直接 return，從不寫 localStorage，
+   所以本機連一份副本都沒有。把每次收到的快照鏡射一份，開場就能先把畫面畫出來。 */
+function cacheSnapshot(v){if(v)lsSet('trip:shared',v);}
+/* 用本機快取先畫一次，回傳有沒有真的畫。
+   ⚠️ 這裡絕對不能設 dataLoaded=true。快取只能看不能寫——解開寫入鎖會讓離線時的編輯
+   把快取當成真資料寫回 Firebase，蓋掉同行者的內容。
+   ⚠️ 沒快取時要回傳 false 而不是照樣呼叫 applySnapshot：它對 null 會退回 DEFAULT_DAYS，
+   畫出一份長得很像、其實是 repo 種子的行程，比空白更容易誤導。 */
+function showCachedIfAny(){
+ const c=lsGet('trip:shared',null);
+ if(!c||!Array.isArray(c.itinerary)||!c.itinerary.length)return false;
+ applySnapshot(c);renderAll();return true;
+}
+
 /* ===== text & labels ===== */
 // Firebase 上的舊資料仍是 {zh,en,ja} 物件，因此保留讀 o.zh 的能力
 const t=o=>o==null?'':(typeof o==='string'?o:(o.zh||''));
@@ -1247,11 +1262,16 @@ function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpens
  renderAll(); // 先畫出介面（資料稍後載入）
 
  if(dbRef){
-  showStatus('load','正在連線資料庫，載入全團共用資料…');
+  // 先用本機快取把畫面畫出來，不然離線冷啟動會是一片空白。寫入仍鎖著。
+  const cached=showCachedIfAny();
+  showStatus('load',cached?'顯示上次載入的資料，正在連線取得最新版…':'正在連線資料庫，載入全團共用資料…');
   // 先匿名登入，通過後才讀寫資料庫（規則需 auth != null）
   let attached=false;
   const failTimer=setTimeout(function(){
-   if(!dataLoaded)showStatus('err','<b>連不上資料庫</b>　目前顯示的不是共用資料，且已鎖住編輯以免覆蓋。請確認 Firebase 已啟用「匿名登入」、規則已發布，以及 config.js 的設定正確。');
+   if(dataLoaded)return;
+   showStatus('err',cached
+    ?'<b>離線</b>　顯示的是上次載入的資料，可能不是最新的，且已鎖住編輯以免覆蓋。連上網路後重新整理即可。'
+    :'<b>連不上資料庫</b>　目前顯示的不是共用資料，且已鎖住編輯以免覆蓋。請確認 Firebase 已啟用「匿名登入」、規則已發布，以及 config.js 的設定正確。');
   },8000);
   firebase.auth().onAuthStateChanged(function(user){
    if(user&&!attached){
@@ -1259,6 +1279,7 @@ function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpens
     dbRef.on('value',function(snap){
      clearTimeout(failTimer);
      applySnapshot(snap.val());
+     cacheSnapshot(snap.val()); // 鏡射一份給下次離線用
      dataLoaded=true;      // 載入完成後才解鎖寫入
      hideStatus();
      renderAll();

@@ -7,7 +7,7 @@
 cd "$(dirname "$0")" || exit 1
 fail=0
 
-for f in test-resequence test-moveday test-datevalidate test-dayform test-legacy test-render test-sheet-import test-sheet-e2e test-customs; do
+for f in test-resequence test-moveday test-datevalidate test-dayform test-legacy test-render test-sheet-import test-sheet-e2e test-customs test-offline; do
   printf '%-20s ' "$f"
   out=$(node "$f.js" 2>&1)
   status=$?
