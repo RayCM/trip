@@ -530,6 +530,7 @@ const UI={
  confirmDel:'確定刪除這天行程？',
  bookGeneric:'訂票連結',
  refGeneric:'參考資料',
+ detailGeneric:'詳細版',
  regions:['名古屋','北陸','信州','飛驒','其他'],
  settleTtl:'結算分帳',
  membersLabel:'同行成員',
@@ -744,6 +745,7 @@ function renderTimeline(){
   const link=d.url?`<a class="booklink" href="${esc(d.url)}" target="_blank" rel="noopener">🎫 ${esc(t(d.ulabel)||t(UI.bookGeneric))}</a>`:'';
   const rainRow=d.rain&&t(d.rain)?`<div class="row rain"><span class="lbl">${t(UI.rowRain)}</span><span>${esc(t(d.rain))}</span></div>`:'';
   const reflink=d.ref?`<a class="booklink reflink" href="${esc(d.ref)}" target="_blank" rel="noopener">📖 ${esc(t(UI.refGeneric))} ↗</a>`:'';
+  const detaillink=d.detail?`<a class="booklink reflink" href="${esc(d.detail)}" target="_blank" rel="noopener">📋 ${esc(t(UI.detailGeneric))} ↗</a>`:'';
   const tools=editMode?`<div class="day-tools">
      <button class="dtool" title="↑" onclick="moveDay(${i},-1)" ${i===0?'disabled':''}>↑</button>
      <button class="dtool" title="↓" onclick="moveDay(${i},1)" ${i===itinerary.length-1?'disabled':''}>↓</button>
@@ -758,7 +760,7 @@ function renderTimeline(){
     <div class="top"><span class="wd" style="background:${col}">${WD[wd]||''}</span><span class="date">${esc(d.date||'')}</span><h3>${esc(t(d.dest))}</h3></div>
     <div class="row"><span class="lbl">${t(UI.rowTrans)}</span><span>${esc(t(d.trans))}</span></div>
     <div class="row"><span class="lbl">${t(UI.rowStay)}</span><span>${stayHtml}</span></div>
-    ${noteRow}${rainRow}${link}${reflink}${tools}
+    ${noteRow}${rainRow}${link}${reflink}${detaillink}${tools}
    </div></div>`;
  }).join('');
  document.getElementById('edit-toggle').textContent=editMode?t(UI.editOff):'✏️ '+t(UI.editOn);

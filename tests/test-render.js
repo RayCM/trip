@@ -178,6 +178,22 @@ check('行程卡片：沒有參考資料時不渲染按鈕', () => {
   });
 });
 
+check('行程卡片：行程詳細版渲染成連結', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', detail: 'https://detail.com' }], () => {
+    const tl = html('timeline');
+    assert.ok(tl.includes('href="https://detail.com"'));
+    assert.ok(tl.includes('詳細版'));
+  });
+});
+
+check('行程卡片：沒有行程詳細版時不渲染按鈕', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }], () => {
+    // 斷在渲染後真的會出現的字串上。detaillink 只是 JS 變數名、不會進 HTML，
+    // 拿它當斷言會永遠假通過（reflink 之所以可行是因為它同時是 CSS class）。
+    assert.ok(!html('timeline').includes('詳細版'), '空值不能渲染出空按鈕');
+  });
+});
+
 check('記帳頁：分類名稱是中文', () => {
   const opts = html('e-cat');
   ['交通', '住宿', '餐飲', '門票・活動', '購物', '其他'].forEach(n =>
