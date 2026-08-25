@@ -386,6 +386,7 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
       <div class="field full"><label id="ml-note" for="m-note"></label><textarea id="m-note" rows="2"></textarea></div>
       <div class="field full"><label id="ml-rain" for="m-rain"></label><textarea id="m-rain" rows="2"></textarea></div>
       <div class="field full"><label id="ml-ref" for="m-ref"></label><input type="text" id="m-ref" placeholder="https://"></div>
+      <div class="field full"><label id="ml-detail" for="m-detail"></label><input type="text" id="m-detail" placeholder="https://"></div>
       <div class="field"><label id="ml-url" for="m-url"></label><input type="text" id="m-url" placeholder="https://"></div>
       <div class="field"><label id="ml-ulabel" for="m-ulabel"></label><input type="text" id="m-ulabel"></div>
       <div class="field full m-check"><label><input type="checkbox" id="m-leaf"> <span id="ml-leaf"></span></label></div>
@@ -521,6 +522,7 @@ const UI={
  fNote2:'備註（選填）',
  fRain:'雨天備案（選填）',
  fRef:'參考資料（選填）',
+ fDetail:'行程詳細版（選填）',
  fUrl:'訂票網址（選填）',
  fUlabel:'按鈕文字（選填）',
  fLeaf:'標為紅葉重點',
@@ -1010,6 +1012,7 @@ function openDayForm(i){
  document.getElementById('m-note').value=t(d.note);
  document.getElementById('m-rain').value=t(d.rain);
  document.getElementById('m-ref').value=d.ref||'';
+ document.getElementById('m-detail').value=d.detail||'';
  document.getElementById('m-url').value=d.url||'';
  document.getElementById('m-ulabel').value=t(d.ulabel);
  document.getElementById('m-leaf').checked=!!d.leaf;
@@ -1024,6 +1027,7 @@ function openDayForm(i){
  document.getElementById('ml-note').textContent=t(UI.fNote2);
  document.getElementById('ml-rain').textContent=t(UI.fRain);
  document.getElementById('ml-ref').textContent=t(UI.fRef);
+ document.getElementById('ml-detail').textContent=t(UI.fDetail);
  document.getElementById('ml-url').textContent=t(UI.fUrl);
  document.getElementById('ml-ulabel').textContent=t(UI.fUlabel);
  document.getElementById('ml-leaf').textContent=t(UI.fLeaf);
@@ -1045,12 +1049,13 @@ async function saveDayForm(){
  const base=editingIndex!=null?itinerary[editingIndex]:{};
  const day=Object.assign({},base,{date:v('m-date'),r:document.getElementById('m-region').value,
   dest:dest,trans:v('m-trans'),stay:v('m-stay'),stayUrl:v('m-stayurl'),note:v('m-note'),
-  url:v('m-url'),ulabel:v('m-ulabel'),rain:v('m-rain'),ref:v('m-ref'),
+  url:v('m-url'),ulabel:v('m-ulabel'),rain:v('m-rain'),ref:v('m-ref'),detail:v('m-detail'),
   leaf:document.getElementById('m-leaf').checked});
  if(!day.note)delete day.note;
  if(!day.stayUrl)delete day.stayUrl;
  if(!day.rain)delete day.rain;
  if(!day.ref)delete day.ref;
+ if(!day.detail)delete day.detail;
  if(!day.url){delete day.url;delete day.ulabel;}
  if(editingIndex!=null)itinerary[editingIndex]=day; else itinerary.push(day);
  resequenceDates();

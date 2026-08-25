@@ -218,5 +218,27 @@ const check = async (name, fn) => {
     assert.strictEqual(document.getElementById('m-ref').value, 'https://r.com');
   });
 
+  await check('存檔：行程詳細版會寫回', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }]; reset();
+    openForm(0);
+    document.getElementById('m-detail').value = 'https://detail.com';
+    await saveForm();
+    assert.strictEqual(itinerary[0].detail, 'https://detail.com');
+  });
+
+  await check('存檔：行程詳細版留空時刪除該欄', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', detail: 'https://old.com' }]; reset();
+    openForm(0);
+    document.getElementById('m-detail').value = '';
+    await saveForm();
+    assert.ok(!('detail' in itinerary[0]), '留空應刪除欄位而不是留下空字串');
+  });
+
+  await check('編輯視窗：帶入現有的行程詳細版', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', detail: 'https://d.com' }]; reset();
+    openForm(0);
+    assert.strictEqual(document.getElementById('m-detail').value, 'https://d.com');
+  });
+
   console.log(`\n${passed}/${total} passed`);
 })();
