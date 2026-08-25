@@ -97,12 +97,34 @@ check('真實試算表：15 列資料、8 個欄位', () => {
 });
 
 const HEAD = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '雨天備案', '參考資料'];
+const HEAD9 = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '雨天備案', '參考資料', '行程詳細版'];
+
+check('轉換：行程詳細版會匯入', () => {
+  const r = toDays([HEAD9, ['10/21', 'A', '', '', '', '', '', '', 'https://detail.example/1']]);
+  assert.strictEqual(r.days[0].detail, 'https://detail.example/1');
+  assert.strictEqual(r.presentCols.detail, true);
+});
+
+check('轉換：行程詳細版缺席不算 missingCols', () => {
+  const r = toDays([HEAD, ['10/21', 'A', '', '', '', '', '', '']]);
+  assert.deepStrictEqual(r.missingCols, [], '選用欄缺席不該中止匯入');
+  assert.strictEqual(r.presentCols.detail, false);
+});
+
+check('轉換：欄位順序對調不影響匯入', () => {
+  const shuffled = ['日期', '目的地', '詳細交通與行程細節', '住宿地點', '備註', '訂票網址', '參考資料', '雨天備案', '行程詳細版'];
+  const r = toDays([shuffled, ['10/21', 'A', '', '', '', '', 'https://ref.com', '雨備內容', 'https://detail.example/1']]);
+  assert.strictEqual(r.days[0].ref, 'https://ref.com', '欄位是依欄名查索引，不依位置');
+  assert.strictEqual(r.days[0].rain, '雨備內容');
+  assert.strictEqual(r.days[0].detail, 'https://detail.example/1');
+});
 
 check('轉換：日期正規化、欄位對應', () => {
   const r = toDays([HEAD, ['10/21(週三)', '名古屋', '搭機', '花園皇宮', '記得帶護照', 'https://x.com', '地下街', 'https://ref.com']]);
   assert.deepStrictEqual(r.days, [{
     date: '10/21', dest: '名古屋', trans: '搭機', stay: '花園皇宮',
     note: '記得帶護照', url: 'https://x.com', rain: '地下街', ref: 'https://ref.com',
+    detail: '',
   }]);
   assert.deepStrictEqual(r.skipped, []);
 });
@@ -221,7 +243,22 @@ check('差異：app 缺欄位（undefined）視為空字串', () => {
   assert.deepStrictEqual(diffFn(sheet, app), []);
 });
 
-const ALL_PRESENT = { date: true, dest: true, trans: true, stay: true, note: true, url: true, rain: true, ref: true };
+const ALL_PRESENT = { date: true, dest: true, trans: true, stay: true, note: true, url: true, rain: true, ref: true, detail: true };
+
+check('差異：行程詳細版會被比對到', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '', ref: '', detail: 'https://d.com' }];
+  const app = [{ date: '10/21', dest: 'A' }];
+  const d = diffFn(sheet, app, ALL_PRESENT);
+  assert.ok(d.some(x => x.field === 'detail' && x.to === 'https://d.com'));
+});
+
+check('差異：行程詳細版缺席時完全不比對該欄', () => {
+  const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '', ref: '', detail: '' }];
+  const app = [{ date: '10/21', dest: 'A', detail: 'https://old.com' }];
+  const present = Object.assign({}, ALL_PRESENT, { detail: false });
+  assert.strictEqual(diffFn(sheet, app, present).filter(x => x.field === 'detail').length, 0,
+    '欄位從試算表移除，不等於要清空 app 上已有的資料');
+});
 
 check('差異：選用欄缺席時完全不比對該欄', () => {
   const sheet = [{ date: '10/21', dest: 'A', trans: '', stay: '', note: '', url: '', rain: '', ref: '' }];
