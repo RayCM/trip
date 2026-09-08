@@ -1,0 +1,135 @@
+name: 濃飛巴士開賣時刻監控
+
+# 目的：測出高山～白川鄉的濃飛巴士每天實際幾點開賣。
+#
+# 原理：訂票頁會顯示「可選出發日範圍」，例如 09/09 ～ 10/08。
+#      上界固定是「今天 + 30 天」，開賣的瞬間會往後跳一天。
+#      監控上界哪一分鐘變，那就是實際開賣時刻。
+#
+# 為什麼不靠 cron 的觸發時刻：GitHub 的 scheduled workflow 常有數分鐘到數十分鐘的延遲，
+#      所以這裡提早 70 分鐘啟動，並在單一 job 內自己輪詢兩小時，延遲吃得下。
+
+on:
+  schedule:
+    # UTC 23:20 = 台北時間隔天 07:20（預期開賣 08:30，提早 70 分鐘）
+    - cron: '20 23 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+
+    steps:
+      - name: 監控可選出發日的上界
+        env:
+          URL: https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421
+          INTERVAL: 60
+          MAX_LOOPS: 120
+        run: |
+          set -u
+
+          now()   { TZ=Asia/Taipei date '+%Y-%m-%d %H:%M:%S'; }
+          today() { TZ=Asia/Taipei date '+%Y-%m-%d'; }
+
+          # 抓「可選出發日範圍」的上界，例如 10/08
+          get_upper() {
+            curl -sL --max-time 20 "$URL" 2>/dev/null \
+              | tr -d ' \t\r' | tr '\n' '@' \
+              | grep -oE '[0-9]{2}/[0-9]{2}@*～@*[0-9]{2}/[0-9]{2}' \
+              | tr -d '@' | head -1 | sed 's/.*～//'
+          }
+
+          # 9/30 之後這個監控就沒有意義了（合掌村那筆已經訂完）
+          if [ "$(TZ=Asia/Taipei date +%Y%m%d)" -gt 20260930 ]; then
+            echo "已過 2026/09/30，監控目的達成，直接結束。"
+            echo "### 已過 9/30，這個 workflow 可以刪了" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          D29=$(TZ=Asia/Taipei date -d '+29 days' '+%m/%d')
+          D30=$(TZ=Asia/Taipei date -d '+30 days' '+%m/%d')
+
+          baseline=""
+          n=0
+          while [ -z "$baseline" ] && [ "$n" -lt 5 ]; do
+            baseline=$(get_upper)
+            n=$((n + 1))
+            [ -z "$baseline" ] && sleep 10
+          done
+
+          if [ -z "$baseline" ]; then
+            echo "抓不到日期範圍——網站可能改版了。"
+            {
+              echo "## ⚠️ 抓不到資料"
+              echo ""
+              echo "`$URL` 的「可選出發日範圍」抓不到，網站可能改版。要重新看一次 HTML 結構。"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          START="$(now)"
+          echo "[$START] 開始監控"
+          echo "  今天（台北）：$(today)"
+          echo "  基準上界：$baseline"
+          echo "  開賣前應為 $D29，開賣後應為 $D30"
+
+          missed=""
+          if [ "$baseline" = "$D30" ]; then
+            missed="yes"
+            echo "  ⚠️ 啟動時上界已經是 $D30——今天的開賣在本次啟動前就發生了（排程延遲）。"
+          fi
+
+          i=0
+          while [ "$i" -lt "$MAX_LOOPS" ]; do
+            sleep "$INTERVAL"
+            i=$((i + 1))
+            cur=$(get_upper)
+
+            if [ -z "$cur" ]; then
+              echo "[$(now)] #$i 抓不到，略過"
+              continue
+            fi
+
+            if [ "$cur" != "$baseline" ]; then
+              HIT="$(now)"
+              echo ""
+              echo "★★★ [$HIT] 開賣了：$baseline → $cur"
+              {
+                echo "## ★ 抓到開賣時刻"
+                echo ""
+                echo "| | |"
+                echo "|---|---|"
+                echo "| **開賣時刻（台北）** | **$HIT** |"
+                echo "| 可訂上界 | $baseline → $cur |"
+                echo "| 本次監控啟動於 | $START |"
+                echo "| 輪詢間隔 | ${INTERVAL} 秒（所以誤差在 1 分鐘內）|"
+                echo ""
+                echo "9/30 早上訂合掌村濃飛巴士（高山 07:20 發），就照這個時刻上線。"
+              } >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+
+            echo "[$(now)] #$i 仍是 $cur"
+          done
+
+          echo ""
+          echo "[$(now)] 跑滿 $MAX_LOOPS 分鐘，上界一直是 $baseline。"
+          {
+            if [ -n "$missed" ]; then
+              echo "## ⚠️ 錯過了今天的開賣"
+              echo ""
+              echo "本次於 **$START** 啟動時，上界已經是 \`$D30\`，代表開賣發生在啟動之前——"
+              echo "GitHub 的排程延遲太久。明天會再跑一次。"
+            else
+              echo "## 今天沒等到變化"
+              echo ""
+              echo "從 **$START** 起監控 $MAX_LOOPS 分鐘，上界一直是 \`$baseline\`（預期開賣後會變成 \`$D30\`）。"
+              echo ""
+              echo "可能是當天沒有開賣（系統維護），或開賣時刻落在監控視窗之外。明天會再跑一次。"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
