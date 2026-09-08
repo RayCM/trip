@@ -1,26 +1,28 @@
 name: 巴士開賣時刻監控
 
-# 目的：測出這兩條預約制巴士每天實際幾點開賣。
-#   1. 合掌村 濃飛巴士（高山 07:20 發）——10/30 用，十筆訂票裡唯一先到先得的一筆
-#   2. 上高地 直達巴士（松本 05:30 發）——10/27 用
+# 目的：測出這幾條預約制巴士每天實際幾點開賣。行程 app 的待辦只記了「幾號要訂」，
+#       但幾點開賣各家不同，官網通通沒公開。
 #
-# 兩條線雖然同系統，開賣時刻卻差了九個半小時（使用者實測）：
-#   合掌村 → 台北 08:30（日本 09:30）
-#   上高地 → 台北 23:00，也就是日本時間 00:00 一到就放
-# 所以排兩個時段，各測各的。
+# 原理：兩個訂票系統都把「可預約的日期」寫在頁面上，上界固定是「今天 + 30 天」——
+#       開賣的瞬間往後跳一天。監控上界哪一分鐘變，那就是實際開賣時刻。
+#         japanbusonline：頁面顯示「目前可預訂的出發日期 09/09 ～ 10/08」
+#         highwaybus    ：原始碼裡有 var displayDates = ["20260908",...,"20261008"]
+#       兩者都是伺服器端就寫好的，純 curl 可抓，不必登入也不會誤觸訂票流程。
 #
-# 原理：訂票頁會顯示「目前可預訂的出發日期」，例如 09/09 ～ 10/08。
-#      上界固定是「今天 + 30 天」，開賣的瞬間會往後跳一天。
-#      監控上界哪一分鐘變，那就是實際開賣時刻。
+# 已知（使用者實測）：合掌村 台北 08:30（日本 09:30）、上高地 台北 23:00（日本 00:00）。
+#       アルピコ那兩筆（戶隱、松本→高山）幾點開賣還不知道，所以早晚兩班都查它。
 #
 # 為什麼不靠 cron 的觸發時刻：GitHub 的 scheduled workflow 常有數分鐘到數十分鐘的延遲，
-#      所以提早 70 分鐘啟動，並在單一 job 內自己輪詢兩小時，延遲吃得下。
+#       所以提早啟動，並在單一 job 內自己輪詢兩小時，延遲吃得下。
+#
+# 相容性：狀態用檔案存而不用關聯陣列，所以 bash 3.2 也跑得動——在 macOS 上就能
+#       把 run: 區塊抽出來模擬，不必每次都開容器。
 
 on:
   schedule:
-    # UTC 23:20 = 台北 07:20 → 測合掌村（實測約 08:30 開賣，提早 70 分鐘）
+    # UTC 23:20 = 台北 07:20 → 合掌村（08:30）＋ アルピコ
     - cron: '20 23 * * *'
-    # UTC 14:20 = 台北 22:20 → 測上高地（實測約 23:00 開賣，提早 40 分鐘）
+    # UTC 14:20 = 台北 22:20 → 上高地（23:00）＋ アルピコ
     - cron: '20 14 * * *'
   workflow_dispatch:
 
@@ -33,105 +35,156 @@ jobs:
     timeout-minutes: 150
 
     steps:
-      - name: 監控兩條線的可預訂日期上界
+      - name: 監控可預約日期的上界
+        shell: bash
         env:
-          URL_SHIRAKAWA: https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421
-          URL_KAMIKOCHI: https://japanbusonline.com/zh-tw/DestinationSearch/1
           INTERVAL: 60
           MAX_LOOPS: 120
-          # 早上那班只測合掌村、晚上那班只測上高地；手動觸發則兩條都測
           SCHEDULE: ${{ github.event.schedule }}
         run: |
-          set +e   # 底下用 [ cond ] && cmd，條件不成立回非零，不能讓 -e 殺掉整個 step
+          set +e   # 底下用「[ 條件 ] && 指令」，條件不成立回非零，不能讓 -e 殺掉整個 step
           set -u
 
           now() { TZ=Asia/Taipei date '+%Y-%m-%d %H:%M:%S'; }
 
-          # 抓「目前可預訂的出發日期」的上界，例如 10/08
-          get_upper() {
-            curl -sL --max-time 20 "$1" 2>/dev/null \
-              | tr -d ' \t\r' | tr '\n' '@' \
-              | grep -oE '[0-9]{2}/[0-9]{2}@*～@*[0-9]{2}/[0-9]{2}' \
-              | tr -d '@' | head -1 | sed 's/.*～//'
+          IDS="shirakawa kamikochi alpico"
+
+          name_of() {
+            case "$1" in
+              shirakawa) echo "合掌村 濃飛巴士" ;;
+              kamikochi) echo "上高地 直達巴士" ;;
+              alpico)    echo "アルピコ（戶隱・松本→高山）" ;;
+            esac
+          }
+          use_of() {
+            case "$1" in
+              shirakawa) echo "10/30" ;;
+              kamikochi) echo "10/27" ;;
+              alpico)    echo "10/26・10/29" ;;
+            esac
+          }
+          url_of() {
+            case "$1" in
+              shirakawa) echo "https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421" ;;
+              kamikochi) echo "https://japanbusonline.com/zh-tw/DestinationSearch/1" ;;
+              alpico)    echo "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256" ;;
+            esac
+          }
+          kind_of() {
+            case "$1" in
+              shirakawa|kamikochi) echo "jbo" ;;
+              alpico)              echo "alp" ;;
+            esac
           }
 
-          # 9/30 之後這個監控就沒有意義了（兩筆票都訂完了）
+          # ---- 探針 ----
+          probe() {   # $1 = id
+            _u=$(url_of "$1")
+            case "$(kind_of "$1")" in
+              jbo) curl -sL --max-time 20 "${_u}" 2>/dev/null \
+                     | tr -d ' \t\r' | tr '\n' '@' \
+                     | grep -oE '[0-9]{2}/[0-9]{2}@*～@*[0-9]{2}/[0-9]{2}' \
+                     | tr -d '@' | head -1 | sed 's/.*～//' ;;
+              alp) curl -sL --max-time 20 "${_u}" 2>/dev/null \
+                     | tr -d ' \t\r\n' \
+                     | grep -oE 'displayDates=\[[^]]*\]' \
+                     | grep -oE '20[0-9]{6}' | tail -1 ;;
+            esac
+          }
+
+          # 9/30 之後這些票都訂完了，監控沒有意義
           if [ "$(TZ=Asia/Taipei date +%Y%m%d)" -gt 20260930 ]; then
             echo "已過 2026/09/30，監控目的達成。"
             echo "### 已過 9/30，這個 workflow 可以刪了" >> "${GITHUB_STEP_SUMMARY}"
             exit 0
           fi
 
-          D30=$(TZ=Asia/Taipei date -d '+30 days' '+%m/%d')
+          # 狀態用檔案存（bash 3.2 沒有關聯陣列）
+          ST=$(mktemp -d)
+          get() { cat "${ST}/$1" 2>/dev/null; }
+          put() { printf '%s' "$2" > "${ST}/$1"; }
 
-          # 這次要測哪幾條
+          # 開賣後上界應該長什麼樣（兩種日期格式）
+          D30_JBO=$(TZ=Asia/Taipei date -d '+30 days' '+%m/%d')
+          D30_ALP=$(TZ=Asia/Taipei date -d '+30 days' '+%Y%m%d')
+          d30_of() { case "$(kind_of "$1")" in jbo) echo "${D30_JBO}" ;; alp) echo "${D30_ALP}" ;; esac; }
+
+          # ---- 這次測哪幾條 ----
           case "${SCHEDULE}" in
-            '20 23 * * *') WANT_S=1; WANT_K=0; echo "早班：只測合掌村" ;;
-            '20 14 * * *') WANT_S=0; WANT_K=1; echo "晚班：只測上高地" ;;
-            *)             WANT_S=1; WANT_K=1; echo "手動觸發：兩條都測" ;;
+            '20 23 * * *') WANT="shirakawa alpico"; echo "早班：合掌村 ＋ アルピコ" ;;
+            '20 14 * * *') WANT="kamikochi alpico"; echo "晚班：上高地 ＋ アルピコ" ;;
+            *)             WANT="${IDS}";           echo "手動觸發：三條都測" ;;
           esac
 
-          base_s=""; base_k=""
-          [ "${WANT_S}" = 1 ] && base_s=$(get_upper "${URL_SHIRAKAWA}")
-          [ "${WANT_K}" = 1 ] && base_k=$(get_upper "${URL_KAMIKOCHI}")
+          for id in ${IDS}; do put "hit_${id}" "SKIP"; put "base_${id}" ""; put "new_${id}" ""; done
 
-          if [ "${WANT_S}${WANT_K}" != "00" ] && [ -z "${base_s}${base_k}" ]; then
-            echo "兩條線都抓不到日期範圍——網站可能改版了。"
+          got_any=0
+          for id in ${WANT}; do
+            b=$(probe "${id}")
+            put "base_${id}" "${b}"
+            put "hit_${id}" ""
+            if [ -n "${b}" ]; then
+              got_any=1
+              if [ "${b}" = "$(d30_of "${id}")" ]; then
+                put "hit_${id}" "MISSED"
+                echo "  $(name_of "${id}") 啟動時已是 ${b} — 開賣發生在啟動之前"
+              fi
+            else
+              put "hit_${id}" "NODATA"
+              echo "  $(name_of "${id}") 抓不到資料"
+            fi
+          done
+
+          if [ "${got_any}" = 0 ]; then
             {
-              echo "## ⚠️ 抓不到資料"
+              echo "## 全部抓不到資料"
               echo ""
-              echo "兩個頁面的「目前可預訂的出發日期」都抓不到，網站可能改版，要重看 HTML 結構。"
+              echo "頁面的可預約日期都抓不到，網站可能改版，要重看 HTML 結構。"
             } >> "${GITHUB_STEP_SUMMARY}"
             exit 1
           fi
 
           START="$(now)"
-          echo "[${START}] 開始監控（開賣後上界應變成 ${D30}）"
-          echo "  合掌村 基準：${base_s:-抓不到}"
-          echo "  上高地 基準：${base_k:-抓不到}"
+          echo "[${START}] 開始監控"
+          for id in ${WANT}; do
+            echo "  $(name_of "${id}") 基準：$(get "base_${id}")（開賣後應變成 $(d30_of "${id}")）"
+          done
 
-          hit_s="SKIP"; hit_k="SKIP"; new_s=""; new_k=""
-          [ "${WANT_S}" = 1 ] && hit_s=""
-          [ "${WANT_K}" = 1 ] && hit_k=""
-          [ "${WANT_S}" = 1 ] && [ "${base_s}" = "${D30}" ] && hit_s="MISSED"
-          [ "${WANT_K}" = 1 ] && [ "${base_k}" = "${D30}" ] && hit_k="MISSED"
-          [ "${hit_s}" = "MISSED" ] && echo "  ⚠️ 合掌村啟動時已是 ${D30}——開賣發生在啟動之前"
-          [ "${hit_k}" = "MISSED" ] && echo "  ⚠️ 上高地啟動時已是 ${D30}——開賣發生在啟動之前"
-
+          # ---- 輪詢 ----
           i=0
           while [ "${i}" -lt "${MAX_LOOPS}" ]; do
-            # 兩條都有結果了就收工
-            [ -n "${hit_s}" ] && [ -n "${hit_k}" ] && break
+            pending=0
+            for id in ${WANT}; do [ -z "$(get "hit_${id}")" ] && pending=1; done
+            [ "${pending}" = 0 ] && break
 
             sleep "${INTERVAL}"
             i=$((i + 1))
+            line="[$(now)] #${i}"
 
-            if [ -z "${hit_s}" ]; then
-              cur=$(get_upper "${URL_SHIRAKAWA}")
-              if [ -n "${cur}" ] && [ "${cur}" != "${base_s}" ]; then
-                hit_s="$(now)"; new_s="${cur}"
-                echo "★ [${hit_s}] 合掌村開賣：${base_s} → ${cur}"
+            for id in ${WANT}; do
+              if [ -z "$(get "hit_${id}")" ]; then
+                cur=$(probe "${id}")
+                base=$(get "base_${id}")
+                if [ -n "${cur}" ] && [ "${cur}" != "${base}" ]; then
+                  t="$(now)"
+                  put "hit_${id}" "${t}"
+                  put "new_${id}" "${cur}"
+                  echo "★ [${t}] $(name_of "${id}") 開賣：${base} → ${cur}"
+                fi
               fi
-            fi
-
-            if [ -z "${hit_k}" ]; then
-              cur=$(get_upper "${URL_KAMIKOCHI}")
-              if [ -n "${cur}" ] && [ "${cur}" != "${base_k}" ]; then
-                hit_k="$(now)"; new_k="${cur}"
-                echo "★ [${hit_k}] 上高地開賣：${base_k} → ${cur}"
-              fi
-            fi
-
-            echo "[$(now)] #${i} 合掌村=${hit_s:-未變} 上高地=${hit_k:-未變}"
+              h=$(get "hit_${id}")
+              line="${line}  ${id}=${h:-未變}"
+            done
+            echo "${line}"
           done
 
-          # ---- 產出摘要 ----
-          fmt() {
-            # $1=結果 $2=基準 $3=新值
+          # ---- 摘要 ----
+          fmt() {   # $1=結果 $2=基準 $3=新值
             case "$1" in
               "SKIP")   echo "— 這班不測" ;;
+              "NODATA") echo "抓不到資料" ;;
+              "MISSED") echo "啟動時已經開賣（排程延遲吃掉了提前量）" ;;
               "")       echo "視窗內沒變化（一直是 \`$2\`）" ;;
-              "MISSED") echo "⚠️ 啟動時已經開賣（排程延遲太久）" ;;
               *)        echo "**$1** — \`$2\` → \`$3\`" ;;
             esac
           }
@@ -139,19 +192,16 @@ jobs:
           {
             echo "## 開賣時刻監控"
             echo ""
-            echo "本次於 **${START}**（台北）啟動，輪詢間隔 ${INTERVAL} 秒，誤差在 1 分鐘內。"
+            echo "於 **${START}**（台北）啟動，每 ${INTERVAL} 秒查一次，誤差在 1 分鐘內。"
             echo ""
             echo "| 路線 | 用在 | 結果 |"
             echo "|---|---|---|"
-            echo "| 合掌村 濃飛巴士 | 10/30 | $(fmt "${hit_s}" "${base_s}" "${new_s}") |"
-            echo "| 上高地 直達巴士 | 10/27 | $(fmt "${hit_k}" "${base_k}" "${new_k}") |"
+            for id in ${IDS}; do
+              echo "| $(name_of "${id}") | $(use_of "${id}") | $(fmt "$(get "hit_${id}")" "$(get "base_${id}")" "$(get "new_${id}")") |"
+            done
             echo ""
-            case "${hit_s}${hit_k}" in
-              *MISSED*) echo "> 標成「啟動時已經開賣」的，代表 GitHub 的排程延遲吃掉了整個提前量。明天會再跑一次。" ;;
-            esac
-            if [ -n "${hit_s}" ] && [ -n "${hit_k}" ] && [ "${hit_s}" = "${hit_k}" ]; then
-              echo "> 兩條線在同一分鐘開賣 — 同系統的路線是一起放的。"
-            fi
+            echo "已知的實測值：合掌村 08:30、上高地 23:00（台北時間）。アルピコ那兩筆待測。"
           } >> "${GITHUB_STEP_SUMMARY}"
 
-          echo "[$(now)] 結束。合掌村=${hit_s:-未變} 上高地=${hit_k:-未變}"
+          rm -rf "${ST}"
+          echo "[$(now)] 結束"
