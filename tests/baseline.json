@@ -238,7 +238,7 @@
    "dest": "松本城",
    "trans": "上午：退房後行李寄放在飯店，步行至國寶松本城，從松本城沿著繩手通（蛙街）或中町通一路逛街散步回車站周邊。\n下午: 回飯店取行李並前往巴士總站搭13:05-15:38巴士前往高山",
    "note": "9/29 訂票。",
-   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
+   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=265&upDownKbn=2",
    "ulabel": "高速巴士 訂票",
    "stay": "たびのホテルBase高山駅前",
    "stayUrl": "https://maps.app.goo.gl/4UEdiFYZK6JVJvXT8"
@@ -360,8 +360,8 @@
   {
    "id": "mtTakayama",
    "due": "2026-09-29",
-   "time": "",
-   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
+   "time": "03:00",
+   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=265&upDownKbn=2",
    "title": "松本→高山 高速巴士",
    "forDay": "10/29 松本城"
   },

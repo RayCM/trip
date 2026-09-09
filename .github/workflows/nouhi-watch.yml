@@ -46,14 +46,14 @@ jobs:
             case "$1" in
               shirakawa) echo "合掌村 濃飛巴士" ;;
               kamikochi) echo "上高地 直達巴士" ;;
-              alpico)    echo "アルピコ（戶隱線）" ;;
+              alpico)    echo "アルピコ（戶隱・松本→高山）" ;;
             esac
           }
           use_of() {
             case "$1" in
               shirakawa) echo "10/30" ;;
               kamikochi) echo "10/27" ;;
-              alpico)    echo "10/26" ;;
+              alpico)    echo "10/26・10/29" ;;
             esac
           }
           url_of() {
