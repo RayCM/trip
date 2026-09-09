@@ -336,7 +336,7 @@
   {
    "id": "togakushi",
    "due": "2026-09-26",
-   "time": "23:00",
+   "time": "03:00",
    "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
    "title": "戶隱・善光寺 高速巴士",
    "forDay": "10/26 戶隱奧社・善光寺"
@@ -350,20 +350,20 @@
    "forDay": "10/27 上高地"
   },
   {
-   "id": "mtTakayama",
-   "due": "2026-09-28",
-   "time": "23:00",
-   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
-   "title": "松本→高山 高速巴士",
-   "forDay": "10/29 松本城"
-  },
-  {
    "id": "fujiAzusa",
    "due": "2026-09-28",
    "time": "10:00",
    "url": "https://www.eki-net.com/en/jreast-train-reservation/Top/Index",
-   "title": "河口湖 JR 指定席（去回共三段）",
+   "title": "河口湖 JR 指定席（去回共四段）",
    "forDay": "10/28 新倉淺間神社・河口湖"
+  },
+  {
+   "id": "mtTakayama",
+   "due": "2026-09-29",
+   "time": "",
+   "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
+   "title": "松本→高山 高速巴士",
+   "forDay": "10/29 松本城"
   },
   {
    "id": "shirakawa",
