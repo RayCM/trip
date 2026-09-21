@@ -115,23 +115,23 @@
    "url": ""
   },
   "mat": {
-   "name": "東橫INN 松本站東口",
+   "name": "東橫INN 松本站東口(附早餐)",
    "url": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
   },
   "ngo": {
-   "name": "名古屋花園皇宮飯店",
+   "name": "名古屋花園皇宮飯店(沒附早餐)",
    "url": "https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA"
   },
   "nm": {
-   "name": "東橫INN 名古屋丸之內",
+   "name": "東橫INN 名古屋丸之內(附早餐)",
    "url": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
   },
   "tak": {
-   "name": "たびのホテルBase高山駅前",
+   "name": "たびのホテルBase高山駅前(沒附早餐)",
    "url": "https://maps.app.goo.gl/4UEdiFYZK6JVJvXT8"
   },
   "toy": {
-   "name": "富山地鐵飯店",
+   "name": "富山地鐵飯店(沒附早餐)",
    "url": "https://maps.app.goo.gl/VprwdcATF86Ttm9YA"
   }
  },
@@ -145,7 +145,7 @@
    "note": "",
    "url": "",
    "ulabel": "",
-   "stay": "名古屋花園皇宮飯店",
+   "stay": "名古屋花園皇宮飯店(沒附早餐)",
    "stayUrl": "https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA"
   },
   {
@@ -157,7 +157,7 @@
    "note": "集合地點: Meieki Parklet(需提早10分前抵達集合地)",
    "url": "https://www.dorapack.com/opentopbus-ch/",
    "ulabel": "",
-   "stay": "名古屋花園皇宮飯店",
+   "stay": "名古屋花園皇宮飯店(沒附早餐)",
    "stayUrl": "https://maps.app.goo.gl/kP9Ns6WdLcvb99FJA"
   },
   {
@@ -169,7 +169,7 @@
    "note": "9/23 台北 09:00 訂票\nJR冰見線全程都可使用IC卡，高岡轉車時不用出站\n回到富山站後，推薦吃站內商場「きときと市場 とやマルシェ」的白蝦亭（白えび亭）吃白蝦天婦羅丼飯\n【雨晴回高岡】冰見線班次稀疏，別抓 14:32 那班（只夠拍 20 分鐘），搭 16:17 那班（在雨晴海岸約有 2 小時，拍立山連峰較從容）。中間沒有別的車，就是「22 分或 2 小時」二選一。回程接あいの風とやま鉄道到富山，晚上仍來得及去富岩運河環水公園。末班冰見線 22:58，不會被困住。\n【立山連峰看不看得到】立山初冠雪平年在 10 月中旬，但從平地清楚看見冠雪要 11 月下旬以後，官方推薦的觀賞期是 11 月下旬～3 月——10/23 偏早，看得到算賺到。「気嵐」（海霧）要 10 月下旬～2 月的寒冷清晨才有，下午去看不到。\n【時段是對的】上午逆光、立山連峰看不清楚，順光的中午～下午才是拍山的最佳時段，14:10–16:17 正好落在這個窗口。傍晚色彩漂亮但山會看不到，所以不用留到日落。山看不到時，女岩、義経岩、氷見線沿海列車照樣可拍。\n【當天可以改主意】雨晴不用訂票不用預約，唯一成本是冰見線車資（刷 IC）。早上在名古屋看一下富山的能見度預報：清楚就照走，灰濛濛或下雨就直接改富山市區（雨天備案的富山縣美術館、高岡大佛／瑞龍寺）。這是全程少數決策成本為零的一天。",
    "url": "https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc",
    "ulabel": "",
-   "stay": "富山地鐵飯店",
+   "stay": "富山地鐵飯店(沒附早餐)",
    "stayUrl": "https://maps.app.goo.gl/VprwdcATF86Ttm9YA"
   },
   {
@@ -181,7 +181,7 @@
    "note": "回到富山後去電鐵富山站的自動售票機使用QR Code領取立山黑部的票（最早可在出發前一天 12:00 後領）。\n⚠️ 領票前先看 10/25 的預報：早鳥網票一旦出票就概不退款，兩人 26,500 全損。要放棄橫越，必須趕在領票前上官網取消，手續費 1,000 円／人。",
    "url": "",
    "ulabel": "",
-   "stay": "富山地鐵飯店",
+   "stay": "富山地鐵飯店(沒附早餐)",
    "stayUrl": "https://maps.app.goo.gl/VprwdcATF86Ttm9YA"
   },
   {
@@ -193,7 +193,7 @@
    "note": "7/31 09:00 官網預訂早鳥票（已訂）\n行李代運：電鐵富山站改札口寄（受付 05:00–10:00）、信濃大町駅前取。1 件 4,000 円、現金限定、不用預約。\n隨身雙肩小背包裝貴重物品（代運不收貴重品），洋蔥式穿法（防風防水外套+輕羽絨+發熱衣），墨鏡防雪盲。\n上山時坐右側靠窗，留意彌陀原前後的展望",
    "url": "https://tateyama-kurobe-webservice.jp/AlpenTour/html/VW001W0010.html",
    "ulabel": "",
-   "stay": "東橫INN 松本站東口",
+   "stay": "東橫INN 松本站東口(附早餐)",
    "stayUrl": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
   },
   {
@@ -205,7 +205,7 @@
    "note": "9/26 台北 03:00 開賣（觀光特急戶隱線，預約制），但去回各 11 班、平日假日都有位，起床後再訂即可。當天在長野車站善光寺出口的 7 號乘車處搭車。去程選靠左側(AB)座位，回程靠右(CD)。\n⚠️ 觀光特急不能刷 IC 卡。線上預約已付款就沒問題，但當天補票或改搭只能用現金或 VISA 感應。\n善光寺內陣・お戒壇めぐり 受付到 16:30（10 月），拝観料 800 円（2026/4/1 起調漲）。",
    "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=256",
    "ulabel": "高速巴士 訂票",
-   "stay": "東橫INN 松本站東口",
+   "stay": "東橫INN 松本站東口(附早餐)",
    "stayUrl": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
   },
   {
@@ -217,7 +217,7 @@
    "note": "9/26 23:00 訂票。清晨極冷（可能結霜），請穿著與立山黑部相同的禦寒裝備，中午回溫再脫。\n傍晚回到車站後先查看10/28 河口湖的降雨機率與雲量，如果太高就退票取消去河口湖，如果OK就先取明天的票。",
    "url": "https://japanbusonline.com/zh-tw/DestinationSearch/1",
    "ulabel": "",
-   "stay": "東橫INN 松本站東口",
+   "stay": "東橫INN 松本站東口(附早餐)",
    "stayUrl": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
   },
   {
@@ -229,7 +229,7 @@
    "note": "9/28 台北 09:00 訂票。去程 06:30 Azusa 4（松本→甲府）、07:50 Kaiji 6（甲府→大月）都選 C/D 側（D 靠窗＝南側，諏訪湖、南阿爾卑斯、富士山）；回程 18:33 Kaiji 43（大月→甲府）、19:32 Azusa 45（甲府→松本）天已全黑，兩人坐一起即可。四張都是 eki-net 的 ticketless 特急券、指定席。\n⚠️ 前一晚在松本把 IC 卡充飽 10,000 円（當天扣 8,940）。離開母區域只能現金充值，車站售票機或超商櫃檯。餘額不足會被大月連絡閘門擋住。\n⚠️ 一定要帶行動電源。ticketless 沒有實體票，手機出示不了就要當場重付，每段貴 260 円，而這天要撐到 20:42。\n乘車券不用買，全程刷 IC（ICOCA、manaca 都通用）。",
    "url": "https://www.eki-net.com/en/jreast-train-reservation/Top/Index",
    "ulabel": "",
-   "stay": "東橫INN 松本站東口",
+   "stay": "東橫INN 松本站東口(附早餐)",
    "stayUrl": "https://maps.app.goo.gl/RU9hxcBN87C51DPTA"
   },
   {
@@ -241,7 +241,7 @@
    "note": "9/29 台北 03:00 開賣。一天只有 6 班，行程用 13:05→15:38；下一班 17:45 太晚，備案只能提早搭 11:55（少逛松本城 70 分）。當天早點訂完。",
    "url": "https://www.highwaybus.com/gp/inbound/inbPlanList?lineId=265&upDownKbn=2",
    "ulabel": "高速巴士 訂票",
-   "stay": "たびのホテルBase高山駅前",
+   "stay": "たびのホテルBase高山駅前(沒附早餐)",
    "stayUrl": "https://maps.app.goo.gl/4UEdiFYZK6JVJvXT8"
   },
   {
@@ -253,7 +253,7 @@
    "note": "9/30 08:30訂票。回到高山濃飛巴士中心後去領取明天的巴士車票和纜車乘車兌換券",
    "url": "https://japanbusonline.com/zh-tw/CourseSearch/11900040002?AreaCd=421",
    "ulabel": "濃飛巴士 訂票",
-   "stay": "たびのホテルBase高山駅前",
+   "stay": "たびのホテルBase高山駅前(沒附早餐)",
    "stayUrl": "https://maps.app.goo.gl/4UEdiFYZK6JVJvXT8"
   },
   {
@@ -265,7 +265,7 @@
    "note": "9/30 訂纜車套票\n⚠️ 套票要換兩次實體票：先在高山濃飛巴士中心櫃檯用 Klook 憑證換套票，到新穗高後再到纜車站二樓售票處換纜車乘車券（會排隊，早點出發）。\n山頂展望台 2,156m，與山麓溫差 6~10℃，早晚溫差大，比照立山黑部／上高地禦寒裝備（洋蔥式穿法），下山回溫再脫。10 月下旬山頂可能已下初雪，但本格積雪通常要 12 月以後。",
    "url": "https://www.klook.com/zh-TW/activity/21617-okuhida-kamikochi-bus-tickets-shinhotaka-ropeway-nagoya/",
    "ulabel": "",
-   "stay": "たびのホテルBase高山駅前",
+   "stay": "たびのホテルBase高山駅前(沒附早餐)",
    "stayUrl": "https://maps.app.goo.gl/4UEdiFYZK6JVJvXT8"
   },
   {
@@ -277,7 +277,7 @@
    "note": "10/1 台北 09:00 訂回名古屋的票。回到名鐵名古屋車站後在車站購買犬山城下町套票\n犬山城下町套票 1,950 円（名鐵往復＋犬山城入場券＋有樂苑折扣＋城下町優惠券），比散買省 310 円——犬山城入場料 2026/3/1 起從 550 漲到 1,000。名鐵各站或 CentX App 都能買，當天買即可。",
    "url": "https://e5489.jr-odekake.net/e5489/ibpc/CBTrainEntryExternalPC?LANG=tc",
    "ulabel": "",
-   "stay": "東橫INN 名古屋丸之內",
+   "stay": "東橫INN 名古屋丸之內(附早餐)",
    "stayUrl": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
   },
   {
@@ -289,7 +289,7 @@
    "note": "10/2 台北 09:30 訂票，去程 08:10 與回程 16:15 一起訂（全車指定席，11/02 夾在連假中間，回程容易滿）",
    "url": "https://ars-kintetsutk.triplabo.com/home",
    "ulabel": "近鐵特急",
-   "stay": "東橫INN 名古屋丸之內",
+   "stay": "東橫INN 名古屋丸之內(附早餐)",
    "stayUrl": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
   },
   {
@@ -301,7 +301,7 @@
    "note": "10/3 訂票",
    "url": "https://www.klook.com/zh-TW/activity/24904-eiho-ji-magome-tsumago-tour-nagoya/",
    "ulabel": "KLOOK 訂票",
-   "stay": "東橫INN 名古屋丸之內",
+   "stay": "東橫INN 名古屋丸之內(附早餐)",
    "stayUrl": "https://maps.app.goo.gl/BgL2odEDoFHaqw1Y7"
   },
   {
