@@ -172,6 +172,23 @@ check('行程卡片：參考資料渲染成連結', () => {
   });
 });
 
+check('行程卡片：參考資料有多個網址時每個各一顆按鈕並編號', () => {
+  // 試算表儲存格裡一行一個網址。整段塞進同一個 href 時瀏覽器會吃掉換行，兩個網址黏成一個 404 連結
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', ref: 'https://a.com\nhttps://b.com' }], () => {
+    const tl = html('timeline');
+    assert.ok(tl.includes('href="https://a.com"'), '第一個網址要是獨立連結');
+    assert.ok(tl.includes('href="https://b.com"'), '第二個網址要是獨立連結');
+    assert.strictEqual((tl.match(/📖/g) || []).length, 2, '應該有兩顆參考資料按鈕');
+    assert.ok(tl.includes('參考資料 1') && tl.includes('參考資料 2'), '多顆按鈕要編號才分得出來');
+  });
+});
+
+check('行程卡片：只有一個參考資料網址時不編號', () => {
+  withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S', ref: 'https://ref.com' }], () => {
+    assert.ok(!html('timeline').includes('參考資料 1'), '單一按鈕不需要編號');
+  });
+});
+
 check('行程卡片：沒有參考資料時不渲染按鈕', () => {
   withDays([{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }], () => {
     assert.ok(!html('timeline').includes('reflink'), '空值不能渲染出空按鈕');

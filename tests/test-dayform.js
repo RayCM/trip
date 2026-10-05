@@ -211,6 +211,19 @@ const check = async (name, fn) => {
     assert.ok(!('ref' in itinerary[0]));
   });
 
+  await check('編輯視窗：參考資料欄可以多行', async () => {
+    // input type=text 會把換行吃掉，存檔時多個網址就黏成一個；必須是 textarea
+    assert.ok(/<textarea id="m-ref"/.test(src), '參考資料欄要用 textarea 才能一行一個網址');
+  });
+
+  await check('存檔：多行參考資料原樣寫回', async () => {
+    itinerary = [{ date: '10/21', dest: 'A', trans: 'T', stay: 'S' }]; reset();
+    openForm(0);
+    document.getElementById('m-ref').value = 'https://a.com\nhttps://b.com';
+    await saveForm();
+    assert.strictEqual(itinerary[0].ref, 'https://a.com\nhttps://b.com');
+  });
+
   await check('編輯視窗：帶入現有的雨天備案與參考資料', async () => {
     itinerary = [{ date: '10/21', dest: 'A', rain: '地下街', ref: 'https://r.com' }]; reset();
     openForm(0);
