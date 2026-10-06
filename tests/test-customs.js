@@ -125,6 +125,17 @@ check('住宿名稱是舊的 {zh,url} 物件時也能分組', () => {
   assert.strictEqual(g[0].nights, 2);
 });
 
+check('住宿名稱帶早餐備註或電話時仍對得上飯店資料', () => {
+  const h = R.renderStays(R.groupStays([
+    { date: '10/21', stay: '名古屋花園皇宮飯店(沒附早餐)' },
+    { date: '10/25', stay: '東橫INN 松本站東口(附早餐) +81263441045' },
+    { date: '10/26', stay: '東橫INN 松本站東口(附早餐)' },
+  ]));
+  assert.ok(!h.includes('未登録'), '不該出現未登録: ' + h);
+  assert.ok(!h.includes('早餐'), '不該印出早餐備註');
+  assert.ok(h.includes('10/25 – 10/26'), '松本兩段應併成一段');
+});
+
 check('住宿欄空白的日子被略過，不產生無名分段', () => {
   const g = R.groupStays([
     { date: '10/21', stay: '富山地鐵飯店' }, { date: '10/22', stay: '' }, { date: '10/23' },
