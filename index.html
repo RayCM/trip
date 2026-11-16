@@ -1243,6 +1243,12 @@ function resetExpForm(){
 }
 async function delExpense(id){expenses=expenses.filter(e=>e.id!==id);await pushField('expenses',expenses);if(editingExpId===id)resetExpForm();else renderExpenses();updateSeedBtns();}
 async function setPayer(id,val){const e=expenses.find(x=>x.id===id);if(!e)return;applyFields(e,{paidBy:val||undefined});await pushField('expenses',expenses);renderExpenses();}
+// 清單排序：日期新到舊；同一天後輸入的在上面（編號開頭 13 碼是輸入時間），交通預估排在手動記的後面
+function sortExpenses(list){
+ const at=e=>{const m=/^\d{13}/.exec(e.id||'');return m?Number(m[0]):-1;};
+ const seedNo=e=>{const m=/^seed-(\d+)$/.exec(e.id||'');return m?Number(m[1]):0;};
+ return list.slice().sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:(at(b)-at(a))||(seedNo(a)-seedNo(b)));
+}
 function renderExpenses(){
  let jpy=0,twd=0;const byCat={};
  expenses.forEach(e=>{const v=e.cur==='JPY'?e.amount*rate:e.amount;if(e.cur==='JPY')jpy+=e.amount;else twd+=e.amount;byCat[e.cat]=(byCat[e.cat]||0)+v;});
@@ -1258,7 +1264,7 @@ function renderExpenses(){
  const list=document.getElementById('exp-list');
  if(!expenses.length){list.innerHTML=`<div class="empty">${t(UI.emptyExp)}</div>`;}
  else{
-  const ordered=[...expenses].sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:0);
+  const ordered=sortExpenses(expenses);
   list.innerHTML=ordered.map(e=>{
    const c=catById(e.cat),sym=e.cur==='JPY'?'¥':'NT$';
    const title=e.note||(e._seedNote?t(e._seedNote):t(c.name));

@@ -18,6 +18,7 @@ eval(extract('splitFromInputs'));
 eval(extract('applyFields'));
 eval(extract('memberRefCount'));
 eval(extract('dropSplitFields'));
+eval(extract('sortExpenses'));
 
 const A = { id: 'a', name: 'Ray' }, B = { id: 'b', name: '小明' };
 const roundTx = tx => tx.map(x => ({ ...x, amount: Math.round(x.amount) }));
@@ -232,6 +233,30 @@ check('成員 2 人以上時照表單內容存（可以清掉分帳）', () => {
   const e = { id: 'x', amount: 939, paidBy: 'a', split: { mode: 'custom', own: { a: 400 } } };
   applyFields(e, dropSplitFields({ amount: 939, paidBy: 'a', split: undefined }, 2));
   assert.ok(!('split' in e));
+});
+
+check('清單排序：日期新到舊，同一天後輸入的排在上面', () => {
+  const list = [
+    { id: '1794817093510359', date: '2026-11-16', note: '10/31午餐' },
+    { id: '1794810000000123', date: '2026-11-03', note: '10/30晚餐' },
+    { id: '17948171000004', date: '2026-11-16', note: '11/01晚餐' },
+  ];
+  assert.deepStrictEqual(sortExpenses(list).map(e => e.note), ['11/01晚餐', '10/31午餐', '10/30晚餐']);
+});
+
+check('清單排序：交通預估（seed- 開頭）排在同一天手動記的後面，彼此照編號', () => {
+  const list = [
+    { id: 'seed-1', date: '2026-10-21', note: 'b' },
+    { id: '1794817093510359', date: '2026-10-21', note: '手動' },
+    { id: 'seed-0', date: '2026-10-21', note: 'a' },
+  ];
+  assert.deepStrictEqual(sortExpenses(list).map(e => e.note), ['手動', 'a', 'b']);
+});
+
+check('清單排序：不改動原本的陣列', () => {
+  const list = [{ id: '1', date: '2026-01-01' }, { id: '2', date: '2026-01-02' }];
+  sortExpenses(list);
+  assert.deepStrictEqual(list.map(e => e.id), ['1', '2']);
 });
 
 console.log(`\n${passed} passed`);
