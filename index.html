@@ -129,6 +129,32 @@ main{padding-top:22px}
 .cur-toggle{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .cur-toggle button{flex:1;appearance:none;border:none;background:#fbf8f1;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink-faint);padding:9px 0;transition:.15s}
 .cur-toggle button.on{background:var(--momiji);color:#fff}
+.field[hidden]{display:none}
+.amt-wrap{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fbf8f1}
+.amt-wrap:focus-within{outline:2px solid var(--slate);outline-offset:0}
+.field .amt-wrap input{flex:1;min-width:0;border:none;border-radius:0;font-size:16px;outline:none}
+.cur-btn{flex:0 0 auto;min-width:72px;appearance:none;border:none;cursor:pointer;background:var(--momiji);color:#fff;font-family:var(--sans);font-size:16px;font-weight:700;padding:0 12px}
+.cur-btn.twd{background:var(--slate)}
+.cur-btn .sw{font-size:11px;opacity:.85;margin-left:4px}
+#exp-form{scroll-margin-top:64px}
+.members-row{padding-bottom:12px;margin-bottom:12px;border-bottom:1px dashed var(--line)}
+.members-row .member-add{margin-bottom:0}
+.members-row .members-box:empty{display:none}
+.members-hint{font-size:12px;color:var(--ink-faint);line-height:1.6;margin-top:8px}
+.members-hint:empty{display:none}
+.split-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.split-row .nm{flex:0 0 76px;font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.split-row input{flex:1;min-width:0}
+.split-preview{font-size:12px;color:var(--ink-soft);line-height:1.7;margin-top:8px;background:#faf6ec;border-radius:8px;padding:8px 10px}
+.split-preview:empty{display:none}
+.split-preview b{color:var(--ink)}
+.form-err{font-size:12.5px;color:var(--momiji);margin-top:10px}
+.form-err:empty{display:none}
+.cancelbtn{width:100%;margin-top:8px;appearance:none;border:1px solid var(--line);background:none;cursor:pointer;font-family:var(--sans);font-size:14px;color:var(--ink-soft);padding:10px;border-radius:12px}
+.cancelbtn:hover{color:var(--ink)}
+.exp-item{cursor:pointer}
+.exp-item.editing{outline:2px solid var(--slate)}
+.split-tag{font-size:10.5px;color:var(--cedar);border:1px solid var(--cedar);border-radius:5px;padding:0 4px}
 .addbtn{width:100%;margin-top:12px;appearance:none;border:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--sans);font-weight:700;font-size:15px;letter-spacing:.08em;padding:12px;border-radius:10px;transition:.18s}
 .addbtn:hover{background:var(--momiji)}
 .addbtn:focus-visible{outline:2px solid var(--slate);outline-offset:2px}
@@ -331,33 +357,44 @@ footer .leaf{display:inline-block;width:11px;height:11px;vertical-align:-1px;mar
       </div>
     </div>
 
-    <div class="exp-form">
+    <div class="exp-form" id="exp-form">
+      <div class="members-row">
+        <div class="members-label" id="members-label"></div>
+        <div class="members-box" id="members-box"></div>
+        <div class="member-add">
+          <input type="text" id="member-input" maxlength="20">
+          <button type="button" id="member-add-btn" onclick="addMember()">＋</button>
+        </div>
+        <div class="members-hint" id="members-hint"></div>
+      </div>
       <div class="grid">
-        <div class="field"><label for="e-amount" id="f-amount-l"></label><input type="number" id="e-amount" placeholder="0" inputmode="decimal" min="0"></div>
-        <div class="field"><label id="f-cur-l"></label>
-          <div class="cur-toggle">
-            <button type="button" id="cur-jpy" class="on" onclick="setCur('JPY')"></button>
-            <button type="button" id="cur-twd" onclick="setCur('TWD')"></button>
+        <div class="field full"><label for="e-amount" id="f-amount-l"></label>
+          <div class="amt-wrap">
+            <button type="button" class="cur-btn" id="cur-btn" onclick="toggleCur()"></button>
+            <input type="number" id="e-amount" placeholder="0" inputmode="decimal" min="0" oninput="renderSplitPreview()">
           </div>
         </div>
         <div class="field"><label for="e-cat" id="f-cat-l"></label><select id="e-cat"></select></div>
         <div class="field"><label for="e-date" id="f-date-l"></label><input type="date" id="e-date"></div>
-        <div class="field full"><label for="e-paidby" id="f-paidby-l"></label><select id="e-paidby"></select></div>
+        <div class="field full" id="paidby-field"><label for="e-paidby" id="f-paidby-l"></label><select id="e-paidby"></select></div>
+        <div class="field full" id="split-field"><label id="f-split-l"></label>
+          <div class="cur-toggle">
+            <button type="button" id="split-eq" class="on" onclick="setSplitMode('equal')"></button>
+            <button type="button" id="split-custom" onclick="setSplitMode('custom')"></button>
+          </div>
+          <div id="split-box"></div>
+        </div>
         <div class="field full"><label for="e-note" id="f-note-l"></label><input type="text" id="e-note"></div>
       </div>
+      <div class="form-err" id="form-err"></div>
       <button class="addbtn" type="button" id="addbtn" onclick="addExpense()"></button>
+      <button class="cancelbtn" type="button" id="cancel-edit" onclick="resetExpForm()" hidden></button>
     </div>
 
     <div class="exp-list" id="exp-list"></div>
 
     <div class="settle-card">
       <div class="settle-ttl" id="settle-ttl"></div>
-      <div class="members-label" id="members-label"></div>
-      <div class="members-box" id="members-box"></div>
-      <div class="member-add">
-        <input type="text" id="member-input" maxlength="20">
-        <button type="button" id="member-add-btn" onclick="addMember()">＋</button>
-      </div>
       <div id="settle-body"></div>
     </div>
   </section>
@@ -510,13 +547,22 @@ const UI={
  seedAdd:'填入交通預估',
  seedAdded:'已填入 ✓',
  seedRm:'移除',
- fAmount:'金額',
- fCur:'幣別',
+ fAmount:'金額（點左邊切換 ¥／NT$）',
  fCat:'分類',
  fDate:'日期',
  fNote:'說明（選填）',
- curJpy:'¥ 日圓',
- curTwd:'NT$ 台幣',
+ curSwitch:'點一下切換幣別',
+ fSplit:'分法',
+ splitEq:'平分',
+ splitCustom:'各自金額',
+ splitHint:'各填自己點的，剩下的（共用菜、稅）自動平分。',
+ restWord:'剩下',
+ restEach:'平分，每人 +',
+ errOver:'各人金額加總超過總額，請再確認。',
+ errBad:'各自金額只能填 0 以上的數字。',
+ saveEdit:'儲存修改',
+ cancelEdit:'取消修改',
+ splitTag:'各自金額',
  notePh:'例：富山地鐵飯店、近江町市場午餐…',
  addEntry:'＋ 新增一筆',
  emptyExp:'還沒有任何花費，點上面新增第一筆吧。',
@@ -560,15 +606,18 @@ const UI={
  addMemberPh:'輸入名字後按 ＋',
  paidBy:'誰付的',
  paidByNone:'—　未指定',
- noMembers:'先在下方新增同行成員，就能自動分帳。',
+ noMembers:'先在上方記帳表單加入 2 位以上同行成員，就能自動分帳。',
+ membersHint:'加入 2 位以上同行成員，就能記誰付的、自動分帳。',
  needPayers:'在各筆花費指定「誰付的」，這裡就會自動算出怎麼分。',
  paidWord:'已付',
+ shareWord:'應攤',
  owesWord:'應付',
  getsWord:'應收',
  evenWord:'結清',
  planTtl:'怎麼還',
  allEven:'目前剛好結清，不用互轉 🎉',
- perEach:'每人均攤'
+ settleCount:'納入結算',
+ itemsUnit:'筆'
 };
 function cd(n){
  const L={l:'剩 '+n+' 天',t:'明天',td:'今天！',o:'已過 '+(-n)+' 天'};
@@ -1093,21 +1142,82 @@ async function delDayFromForm(){
 }
 
 /* ===== expenses ===== */
-function setCur(c){curSel=c;document.getElementById('cur-jpy').classList.toggle('on',c==='JPY');document.getElementById('cur-twd').classList.toggle('on',c==='TWD');}
+let splitMode='equal',editingExpId=null;
+// 本地時區的今天（toISOString 是 UTC，日本早上 9 點前會變成前一天）
+function todayStr(){const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);}
+function renderCurBtn(){const b=document.getElementById('cur-btn');b.innerHTML=(curSel==='JPY'?'¥':'NT$')+'<span class="sw">⇄</span>';b.classList.toggle('twd',curSel==='TWD');b.setAttribute('aria-label',t(UI.curSwitch));b.title=t(UI.curSwitch);}
+function setCur(c){curSel=c;renderCurBtn();renderSplitPreview();}
+function toggleCur(){setCur(curSel==='JPY'?'TWD':'JPY');}
 function fillCatSelect(){const sel=document.getElementById('e-cat');const v=sel.value;sel.innerHTML=CATS.map(c=>`<option value="${c.id}">${t(c.name)}</option>`).join('');if(v)sel.value=v;}
 function payerOptions(sel){return `<option value="">${t(UI.paidByNone)}</option>`+members.map(m=>`<option value="${m.id}"${sel===m.id?' selected':''}>${esc(m.name)}</option>`).join('');}
 function fillPaidBySelect(){const s=document.getElementById('e-paidby');const v=s.value;s.innerHTML=payerOptions();if(v&&members.find(m=>m.id===v))s.value=v;}
-async function addExpense(){
- const amt=parseFloat(document.getElementById('e-amount').value);
- if(!amt||amt<=0){document.getElementById('e-amount').focus();return;}
- const paidBy=document.getElementById('e-paidby').value;
- expenses.push({id:Date.now()+''+Math.floor(Math.random()*1000),amount:amt,cur:curSel,cat:document.getElementById('e-cat').value,date:document.getElementById('e-date').value||new Date().toISOString().slice(0,10),note:document.getElementById('e-note').value.trim(),paidBy:paidBy||undefined});
- await pushField('expenses',expenses);
- document.getElementById('e-amount').value='';document.getElementById('e-note').value='';
- renderExpenses();
+function setSplitMode(m){splitMode=m;document.getElementById('split-eq').classList.toggle('on',m==='equal');document.getElementById('split-custom').classList.toggle('on',m==='custom');renderSplitBox();}
+function readSplitInputs(){const o={};document.querySelectorAll('#split-box input[data-mid]').forEach(i=>{o[i.dataset.mid]=i.value;});return o;}
+// 依分法畫出各自金額的輸入框，保留已經填的數字
+function renderSplitBox(keep){
+ const box=document.getElementById('split-box');
+ if(splitMode!=='custom'||members.length<2){box.innerHTML='';renderSplitPreview();return;}
+ const prev=keep||readSplitInputs();
+ box.innerHTML=`<div class="members-hint">${t(UI.splitHint)}</div>`+members.map(m=>`<div class="split-row"><span class="nm">${esc(m.name)}</span><input type="number" inputmode="decimal" min="0" placeholder="0" data-mid="${m.id}" value="${prev[m.id]==null?'':esc(String(prev[m.id]))}" oninput="renderSplitPreview()"></div>`).join('')+'<div class="split-preview" id="split-preview"></div>';
+ renderSplitPreview();
 }
-async function delExpense(id){expenses=expenses.filter(e=>e.id!==id);await pushField('expenses',expenses);renderExpenses();updateSeedBtns();}
-async function setPayer(id,val){const e=expenses.find(x=>x.id===id);if(!e)return;e.paidBy=val||undefined;await pushField('expenses',expenses);renderExpenses();}
+// 即時顯示各自金額下每人最後要攤多少
+function renderSplitPreview(){
+ document.getElementById('form-err').textContent='';
+ const pv=document.getElementById('split-preview');if(!pv)return;
+ const amt=parseFloat(document.getElementById('e-amount').value)||0;
+ if(!amt){pv.innerHTML='';return;}
+ const r=splitFromInputs(amt,'custom',readSplitInputs());
+ if(r.error){pv.innerHTML='';document.getElementById('form-err').textContent=t(r.error==='over'?UI.errOver:UI.errBad);return;}
+ const sh=expenseShares({amount:amt,split:r.split},members);if(!sh){pv.innerHTML='';return;}
+ const sym=curSel==='JPY'?'¥':'NT$';
+ const rest=amt-Object.values((r.split&&r.split.own)||{}).reduce((s,v)=>s+v,0);
+ pv.innerHTML=(rest>0.005?`${t(UI.restWord)} ${sym}${fmt(rest)} ${t(UI.restEach)}${sym}${fmt(rest/members.length)}<br>`:'')+members.map(m=>`${esc(m.name)} <b>${sym}${fmt(sh[m.id])}</b>`).join('・');
+}
+// 寫進物件：值是 undefined 的欄位直接刪掉（Firebase 不收 undefined）
+function applyFields(target,fields){for(const k in fields){if(fields[k]===undefined)delete target[k];else target[k]=fields[k];}return target;}
+function updateFormMode(){document.getElementById('addbtn').textContent=t(editingExpId?UI.saveEdit:UI.addEntry);document.getElementById('cancel-edit').hidden=!editingExpId;}
+// 新增一筆，或在修改模式下存回原本那筆
+async function addExpense(){
+ const amtEl=document.getElementById('e-amount');const amt=parseFloat(amtEl.value);
+ if(!amt||amt<=0){amtEl.focus();return;}
+ const r=splitFromInputs(amt,members.length>=2?splitMode:'equal',readSplitInputs());
+ if(r.error){document.getElementById('form-err').textContent=t(r.error==='over'?UI.errOver:UI.errBad);return;}
+ const cur=editingExpId&&expenses.find(e=>e.id===editingExpId);
+ const fields={amount:amt,cur:curSel,cat:document.getElementById('e-cat').value,date:document.getElementById('e-date').value||(cur&&cur.date)||todayStr(),note:document.getElementById('e-note').value.trim(),paidBy:document.getElementById('e-paidby').value||undefined,split:r.split};
+ if(cur)applyFields(cur,fields);
+ else expenses.push(applyFields({id:Date.now()+''+Math.floor(Math.random()*1000)},fields));
+ await pushField('expenses',expenses);
+ resetExpForm();
+}
+// 點清單上的一筆，把內容帶回表單修改
+function startEditExpense(id){
+ const e=expenses.find(x=>x.id===id);if(!e)return;
+ editingExpId=id;
+ document.getElementById('e-amount').value=e.amount;
+ setCur(e.cur==='TWD'?'TWD':'JPY');
+ document.getElementById('e-cat').value=e.cat;
+ document.getElementById('e-date').value=/^\d{4}-\d{2}-\d{2}$/.test(e.date||'')?e.date:'';
+ document.getElementById('e-note').value=e.note||'';
+ fillPaidBySelect();document.getElementById('e-paidby').value=e.paidBy&&members.find(m=>m.id===e.paidBy)?e.paidBy:'';
+ const own=e.split&&e.split.mode==='custom'?(e.split.own||{}):null;
+ splitMode=own?'custom':'equal';
+ document.getElementById('split-eq').classList.toggle('on',!own);document.getElementById('split-custom').classList.toggle('on',!!own);
+ const keep={};if(own)Object.keys(own).forEach(k=>{keep[k]=String(own[k]);});
+ renderSplitBox(keep);
+ updateFormMode();renderExpenses();
+ document.getElementById('exp-form').scrollIntoView({behavior:'smooth',block:'start'});
+}
+// 清空表單、離開修改模式（幣別、分類、誰付的沿用上一筆）
+function resetExpForm(){
+ if(editingExpId)document.getElementById('e-date').value=todayStr();
+ editingExpId=null;
+ document.getElementById('e-amount').value='';document.getElementById('e-note').value='';
+ splitMode='equal';document.getElementById('split-eq').classList.add('on');document.getElementById('split-custom').classList.remove('on');
+ renderSplitBox({});updateFormMode();renderExpenses();
+}
+async function delExpense(id){expenses=expenses.filter(e=>e.id!==id);await pushField('expenses',expenses);if(editingExpId===id)resetExpForm();else renderExpenses();updateSeedBtns();}
+async function setPayer(id,val){const e=expenses.find(x=>x.id===id);if(!e)return;applyFields(e,{paidBy:val||undefined});await pushField('expenses',expenses);renderExpenses();}
 function renderExpenses(){
  let jpy=0,twd=0;const byCat={};
  expenses.forEach(e=>{const v=e.cur==='JPY'?e.amount*rate:e.amount;if(e.cur==='JPY')jpy+=e.amount;else twd+=e.amount;byCat[e.cat]=(byCat[e.cat]||0)+v;});
@@ -1128,11 +1238,12 @@ function renderExpenses(){
    const c=catById(e.cat),sym=e.cur==='JPY'?'¥':'NT$';
    const title=e.note||(e._seedNote?t(e._seedNote):t(c.name));
    const tag=e._seed?' ‧ '+t(UI.estTag):'';
-   const payer=members.length?`<select class="exp-payer" onchange="setPayer('${e.id}',this.value)">${payerOptions(e.paidBy)}</select>`:'';
-   return `<div class="exp-item"><span class="cat-dot" style="background:${c.color}"></span>
-    <div class="meta"><div class="ttl">${esc(title)}</div><div class="sub"><span>${t(c.name)} ‧ ${e.date}${tag}</span>${payer}</div></div>
+   const payer=members.length>=2?`<select class="exp-payer" onclick="event.stopPropagation()" onchange="setPayer('${e.id}',this.value)">${payerOptions(e.paidBy)}</select>`:'';
+   const split=e.split&&e.split.mode==='custom'?`<span class="split-tag">${t(UI.splitTag)}</span>`:'';
+   return `<div class="exp-item${e.id===editingExpId?' editing':''}" onclick="startEditExpense('${e.id}')"><span class="cat-dot" style="background:${c.color}"></span>
+    <div class="meta"><div class="ttl">${esc(title)}</div><div class="sub"><span>${t(c.name)} ‧ ${e.date}${tag}</span>${payer}${split}</div></div>
     <span class="amt">${sym}${fmt(e.amount)}</span>
-    <button class="del" aria-label="${t(UI.del)}" onclick="delExpense('${e.id}')">×</button></div>`;
+    <button class="del" aria-label="${t(UI.del)}" onclick="event.stopPropagation();delExpense('${e.id}')">×</button></div>`;
   }).join('');
  }
  fillPaidBySelect();renderMembers();renderSettlement();
@@ -1150,7 +1261,35 @@ function renderMembers(){
  document.getElementById('settle-ttl').textContent=t(UI.settleTtl);
  document.getElementById('members-label').textContent=t(UI.membersLabel);
  document.getElementById('member-input').placeholder=t(UI.addMemberPh);
- document.getElementById('members-box').innerHTML=members.length?members.map(m=>`<span class="member-chip">${esc(m.name)}<button onclick="removeMember('${m.id}')" aria-label="${t(UI.del)}">×</button></span>`).join(''):'';
+ document.getElementById('members-box').innerHTML=members.map(m=>`<span class="member-chip">${esc(m.name)}<button onclick="removeMember('${m.id}')" aria-label="${t(UI.del)}">×</button></span>`).join('');
+ const ok=members.length>=2;
+ document.getElementById('members-hint').textContent=ok?'':t(UI.membersHint);
+ document.getElementById('paidby-field').hidden=!ok;
+ document.getElementById('split-field').hidden=!ok;
+ renderSplitBox();
+}
+// 算每位成員在一筆花費裡要攤多少（原幣別）：各自金額先算給本人，剩下的平分；不合法時回傳 null
+function expenseShares(e,mems){
+ if(!mems.length)return null;
+ const own=(e.split&&e.split.mode==='custom'&&e.split.own)||{};
+ const out={};let used=0;
+ for(const m of mems){const v=Number(own[m.id])||0;if(v<0)return null;out[m.id]=v;used+=v;}
+ const rest=e.amount-used;
+ if(rest<-0.005)return null;
+ mems.forEach(m=>out[m.id]+=rest/mems.length);
+ return out;
+}
+// 把表單「各自金額」輸入框的字串轉成要存的分法；回傳 {split} 或 {error:'bad'|'over'}
+function splitFromInputs(amount,mode,raw){
+ if(mode!=='custom')return {split:undefined};
+ const own={};let used=0;
+ for(const id of Object.keys(raw)){
+  const s=String(raw[id]).trim();if(!s)continue;
+  const v=Number(s);if(!isFinite(v)||v<0)return {error:'bad'};
+  if(v>0){own[id]=v;used+=v;}
+ }
+ if(used-amount>0.005)return {error:'over'};
+ return {split:Object.keys(own).length?{mode:'custom',own}:undefined};
 }
 function computeSettlement(){
  if(members.length<2)return null;
@@ -1158,12 +1297,14 @@ function computeSettlement(){
  let included=0,pool=0;
  expenses.forEach(e=>{
   if(!e.paidBy||!members.find(m=>m.id===e.paidBy))return;
-  const v=e.cur==='JPY'?e.amount*rate:e.amount;
+  const sh=expenseShares(e,members);if(!sh)return;
+  const k=e.cur==='JPY'?rate:1;
+  const v=e.amount*k;
   paid[e.paidBy]+=v;pool+=v;included++;
-  const per=v/members.length;members.forEach(m=>share[m.id]+=per);
+  members.forEach(m=>share[m.id]+=sh[m.id]*k);
  });
  if(!included)return {included:0};
- const net=members.map(m=>({id:m.id,name:m.name,paid:paid[m.id],net:paid[m.id]-share[m.id]}));
+ const net=members.map(m=>({id:m.id,name:m.name,paid:paid[m.id],share:share[m.id],net:paid[m.id]-share[m.id]}));
  const cred=net.filter(x=>x.net>0.5).map(x=>({...x})).sort((a,b)=>b.net-a.net);
  const deb=net.filter(x=>x.net<-0.5).map(x=>({name:x.name,amt:-x.net})).sort((a,b)=>b.amt-a.amt);
  const tx=[];let i=0,j=0;
@@ -1173,7 +1314,7 @@ function computeSettlement(){
   cred[i].net-=m;deb[j].amt-=m;
   if(cred[i].net<0.5)i++;if(deb[j].amt<0.5)j++;
  }
- return {included,pool,perEach:pool/members.length,net,tx};
+ return {included,pool,net,tx};
 }
 function renderSettlement(){
  const box=document.getElementById('settle-body');
@@ -1184,10 +1325,10 @@ function renderSettlement(){
   const cls=x.net>0.5?'pos':x.net<-0.5?'neg':'zero';
   const word=x.net>0.5?t(UI.getsWord):x.net<-0.5?t(UI.owesWord):t(UI.evenWord);
   const val=Math.abs(x.net)<0.5?'':' NT$'+fmt(Math.abs(x.net));
-  return `<div class="balrow"><span class="nm">${esc(x.name)}</span><span class="paid">${t(UI.paidWord)} NT$${fmt(x.paid)}</span><span class="net ${cls}">${word}${val}</span></div>`;
+  return `<div class="balrow"><span class="nm">${esc(x.name)}</span><span class="paid">${t(UI.paidWord)} NT$${fmt(x.paid)}・${t(UI.shareWord)} NT$${fmt(x.share)}</span><span class="net ${cls}">${word}${val}</span></div>`;
  }).join('');
  const plan=r.tx.length?r.tx.map(x=>`<div class="txrow"><span class="who">${esc(x.from)}</span><span class="arr">→</span><span class="who">${esc(x.to)}</span><span class="amt">NT$${fmt(x.amount)}</span></div>`).join(''):`<div class="all-even">${t(UI.allEven)}</div>`;
- box.innerHTML=`<div class="settle-meta">${t(UI.perEach)}：<b>NT$${fmt(r.perEach)}</b></div>${rows}<div class="plan-ttl">${t(UI.planTtl)}</div>${plan}`;
+ box.innerHTML=`<div class="settle-meta">${t(UI.settleCount)}：<b>${r.included} ${t(UI.itemsUnit)}・NT$${fmt(r.pool)}</b></div>${rows}<div class="plan-ttl">${t(UI.planTtl)}</div>${plan}`;
 }
 
 /* ===== seed ===== */
@@ -1250,15 +1391,16 @@ function applyStatic(){
  document.getElementById('rate-post').textContent=t(UI.ratePost);
  document.getElementById('seed-ttl').textContent=t(UI.seedTtl);
  document.getElementById('f-amount-l').textContent=t(UI.fAmount);
- document.getElementById('f-cur-l').textContent=t(UI.fCur);
  document.getElementById('f-cat-l').textContent=t(UI.fCat);
  document.getElementById('f-date-l').textContent=t(UI.fDate);
  document.getElementById('f-note-l').textContent=t(UI.fNote);
  document.getElementById('f-paidby-l').textContent=t(UI.paidBy);
- document.getElementById('cur-jpy').textContent=t(UI.curJpy);
- document.getElementById('cur-twd').textContent=t(UI.curTwd);
+ document.getElementById('f-split-l').textContent=t(UI.fSplit);
+ document.getElementById('split-eq').textContent=t(UI.splitEq);
+ document.getElementById('split-custom').textContent=t(UI.splitCustom);
+ document.getElementById('cancel-edit').textContent=t(UI.cancelEdit);
  document.getElementById('e-note').placeholder=t(UI.notePh);
- document.getElementById('addbtn').textContent=t(UI.addEntry);
+ renderCurBtn();updateFormMode();
  document.getElementById('todo-h3').textContent=t(UI.todoH3);
  document.getElementById('todo-p').textContent=t(UI.todoP);
  document.getElementById('footer-text').textContent=t(UI.footer);
@@ -1267,7 +1409,7 @@ function renderAll(){applyStatic();fillCatSelect();renderTimeline();renderExpens
 
 /* ===== init ===== */
 (function init(){
- document.getElementById('e-date').value=new Date().toISOString().slice(0,10);
+ document.getElementById('e-date').value=todayStr();
  document.getElementById('rate').addEventListener('input',async e=>{rate=parseFloat(e.target.value)||0;await pushField('settings',{rate});renderExpenses();updateSeed();});
  renderAll(); // 先畫出介面（資料稍後載入）
 

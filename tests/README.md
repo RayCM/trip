@@ -26,6 +26,7 @@ sh tests/run-all.sh
 | `test-render.js` | 18 | 用 DOM stub 實際執行整段主 script 與 `renderAll()`，檢查三個分頁的渲染輸出、雨天備案與參考資料的空值守衛 |
 | `test-sheet-import.js` | 63 | CSV 解析、列轉換、選用欄語意、差異計算、套用差異、差異視窗渲染 |
 | `test-sheet-e2e.js` | 11 | 用真實試算表 fixture 跑完整條匯入流程，含冪等性與選用欄缺席 |
+| `test-split.js` | 17 | 分帳：`expenseShares()` 平分與各自金額（剩下平分）、`splitFromInputs()` 表單驗證、`computeSettlement()` 日圓台幣混算與已付＝應攤、`applyFields()` 刪掉 undefined 欄位 |
 
 共 146 項。
 
