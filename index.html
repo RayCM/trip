@@ -143,7 +143,10 @@ main{padding-top:22px}
 .members-hint{font-size:12px;color:var(--ink-faint);line-height:1.6;margin-top:8px}
 .members-hint:empty{display:none}
 .split-row{display:flex;align-items:center;gap:8px;margin-top:8px}
-.split-row .nm{flex:0 0 76px;font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.split-row .nm{flex:0 0 96px;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;cursor:pointer}
+.split-row .nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.split-row .nm input{width:18px;height:18px;flex:0 0 18px;margin:0;padding:0;accent-color:var(--momiji)}
+.split-row.off .nm span{color:var(--ink-faint);text-decoration:line-through}
 .split-row input{flex:1;min-width:0}
 .split-preview{font-size:12px;color:var(--ink-soft);line-height:1.7;margin-top:8px;background:#faf6ec;border-radius:8px;padding:8px 10px}
 .split-preview:empty{display:none}
@@ -565,7 +568,12 @@ const UI={
  fSplit:'分法',
  splitEq:'平分',
  splitCustom:'各自金額',
- splitHint:'各填自己點的，剩下的（共用菜、稅）自動平分。',
+ splitHint:'各填自己點的，剩下的（共用菜、稅）平分給有勾的人；這筆沒他的份就取消勾選。',
+ splitHintEq:'平分給有勾的人；這筆沒他的份就取消勾選。',
+ notInThis:'不分這筆',
+ errNone:'至少要勾一個人。',
+ exclTag:'不含',
+ confirmRmMember:'{name} 還在 {n} 筆紀錄裡（誰付的或分帳），移除後這些紀錄的分帳會算不出來。只是某一筆沒他的份，請在那筆取消勾選就好。確定要移除嗎？',
  restWord:'剩下',
  restEach:'平分，每人 +',
  errOver:'各人金額加總超過總額，請再確認。',
@@ -1164,28 +1172,35 @@ function fillCatSelect(){const sel=document.getElementById('e-cat');const v=sel.
 function payerOptions(sel){return `<option value="">${t(UI.paidByNone)}</option>`+members.map(m=>`<option value="${m.id}"${sel===m.id?' selected':''}>${esc(m.name)}</option>`).join('');}
 function fillPaidBySelect(){const s=document.getElementById('e-paidby');const v=s.value;s.innerHTML=payerOptions();if(v&&members.find(m=>m.id===v))s.value=v;}
 function setSplitMode(m){splitMode=m;document.getElementById('split-eq').classList.toggle('on',m==='equal');document.getElementById('split-custom').classList.toggle('on',m==='custom');renderSplitBox();}
-function readSplitInputs(){const o={};document.querySelectorAll('#split-box input[data-mid]').forEach(i=>{o[i.dataset.mid]=i.value;});return o;}
-// 依分法畫出各自金額的輸入框，保留已經填的數字
-function renderSplitBox(keep){
+function readSplitInputs(){const o={};document.querySelectorAll('#split-box input[data-in]').forEach(i=>{o[i.dataset.in]='';});document.querySelectorAll('#split-box input[data-mid]').forEach(i=>{o[i.dataset.mid]=i.value;});return o;}
+function readOut(){const o=[];document.querySelectorAll('#split-box input[data-in]').forEach(i=>{if(!i.checked)o.push(i.dataset.in);});return o;}
+// 依分法畫出每位成員的勾選框（與各自金額的輸入框），保留已經填的數字與勾選
+function renderSplitBox(keep,keepOut){
  const box=document.getElementById('split-box');
- if(splitMode!=='custom'||members.length<2){box.innerHTML='';renderSplitPreview();return;}
- const prev=keep||readSplitInputs();
- box.innerHTML=`<div class="members-hint">${t(UI.splitHint)}</div>`+members.map(m=>`<div class="split-row"><span class="nm">${esc(m.name)}</span><input type="number" inputmode="decimal" min="0" placeholder="0" data-mid="${m.id}" value="${prev[m.id]==null?'':esc(String(prev[m.id]))}" oninput="renderSplitPreview()"></div>`).join('')+'<div class="split-preview" id="split-preview"></div>';
+ if(members.length<2){box.innerHTML='';renderSplitPreview();return;}
+ const prev=keep||readSplitInputs(),out=keepOut||readOut(),custom=splitMode==='custom';
+ box.innerHTML=`<div class="members-hint">${t(custom?UI.splitHint:UI.splitHintEq)}</div>`+members.map(m=>{
+  const off=out.indexOf(m.id)>=0;
+  const amt=custom?`<input type="number" inputmode="decimal" min="0" placeholder="${off?t(UI.notInThis):'0'}" data-mid="${m.id}" value="${off||prev[m.id]==null?'':esc(String(prev[m.id]))}"${off?' disabled':''} oninput="renderSplitPreview()">`:'';
+  return `<div class="split-row${off?' off':''}"><label class="nm"><input type="checkbox" data-in="${m.id}" aria-label="${esc(m.name)}"${off?'':' checked'} onchange="renderSplitBox()"><span>${esc(m.name)}</span></label>${amt}</div>`;
+ }).join('')+'<div class="split-preview" id="split-preview"></div>';
  renderSplitPreview();
 }
-// 即時顯示各自金額下每人最後要攤多少
+// 即時顯示每人最後要攤多少
 function renderSplitPreview(){
  document.getElementById('form-err').textContent='';
  const pv=document.getElementById('split-preview');if(!pv)return;
  const amt=parseFloat(document.getElementById('e-amount').value)||0;
+ const r=splitFromInputs(amt,splitMode,readSplitInputs(),readOut());
+ if(r.error){pv.innerHTML='';document.getElementById('form-err').textContent=splitErrText(r.error);return;}
  if(!amt){pv.innerHTML='';return;}
- const r=splitFromInputs(amt,'custom',readSplitInputs());
- if(r.error){pv.innerHTML='';document.getElementById('form-err').textContent=t(r.error==='over'?UI.errOver:UI.errBad);return;}
  const sh=expenseShares({amount:amt,split:r.split},members);if(!sh){pv.innerHTML='';return;}
- const sym=curSel==='JPY'?'¥':'NT$';
+ const sym=curSel==='JPY'?'¥':'NT$',out=readOut(),inCount=members.length-out.length;
  const rest=amt-Object.values((r.split&&r.split.own)||{}).reduce((s,v)=>s+v,0);
- pv.innerHTML=(rest>0.005?`${t(UI.restWord)} ${sym}${fmt(rest)} ${t(UI.restEach)}${sym}${fmt(rest/members.length)}<br>`:'')+members.map(m=>`${esc(m.name)} <b>${sym}${fmt(sh[m.id])}</b>`).join('・');
+ const restLine=splitMode==='custom'&&rest>0.005&&rest<amt-0.005?`${t(UI.restWord)} ${sym}${fmt(rest)} ${t(UI.restEach)}${sym}${fmt(rest/inCount)}<br>`:'';
+ pv.innerHTML=restLine+members.map(m=>`${esc(m.name)} <b>${sym}${fmt(sh[m.id])}</b>`).join('・');
 }
+function splitErrText(code){return t(code==='over'?UI.errOver:code==='none'?UI.errNone:UI.errBad);}
 // 寫進物件：值是 undefined 的欄位直接刪掉（Firebase 不收 undefined）
 function applyFields(target,fields){for(const k in fields){if(fields[k]===undefined)delete target[k];else target[k]=fields[k];}return target;}
 function updateFormMode(){document.getElementById('addbtn').textContent=t(editingExpId?UI.saveEdit:UI.addEntry);document.getElementById('cancel-edit').hidden=!editingExpId;}
@@ -1193,10 +1208,11 @@ function updateFormMode(){document.getElementById('addbtn').textContent=t(editin
 async function addExpense(){
  const amtEl=document.getElementById('e-amount');const amt=parseFloat(amtEl.value);
  if(!amt||amt<=0){amtEl.focus();return;}
- const r=splitFromInputs(amt,members.length>=2?splitMode:'equal',readSplitInputs());
- if(r.error){document.getElementById('form-err').textContent=t(r.error==='over'?UI.errOver:UI.errBad);return;}
+ const r=members.length>=2?splitFromInputs(amt,splitMode,readSplitInputs(),readOut()):{split:undefined};
+ if(r.error){document.getElementById('form-err').textContent=splitErrText(r.error);return;}
  const cur=editingExpId&&expenses.find(e=>e.id===editingExpId);
  const fields={amount:amt,cur:curSel,cat:document.getElementById('e-cat').value,date:document.getElementById('e-date').value||(cur&&cur.date)||todayStr(),note:document.getElementById('e-note').value.trim(),paidBy:document.getElementById('e-paidby').value||undefined,split:r.split};
+ dropSplitFields(fields,members.length);
  if(cur)applyFields(cur,fields);
  else expenses.push(applyFields({id:Date.now()+''+Math.floor(Math.random()*1000)},fields));
  await pushField('expenses',expenses);
@@ -1212,9 +1228,9 @@ function startEditExpense(id){
  document.getElementById('e-date').value=/^\d{4}-\d{2}-\d{2}$/.test(e.date||'')?e.date:'';
  document.getElementById('e-note').value=e.note||'';
  fillPaidBySelect();document.getElementById('e-paidby').value=e.paidBy&&members.find(m=>m.id===e.paidBy)?e.paidBy:'';
- const own=e.split&&e.split.mode==='custom'?(e.split.own||{}):{};
+ const sp=e.split||{},own=(sp.mode==='custom'&&sp.own)||{};
  const keep={};Object.keys(own).forEach(k=>{keep[k]=String(own[k]);});
- setSplitMode('custom');renderSplitBox(keep);
+ setSplitMode(sp.mode==='equal'?'equal':'custom');renderSplitBox(keep,(sp.out||[]).slice());
  updateFormMode();renderExpenses();
  document.getElementById('exp-form').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -1223,7 +1239,7 @@ function resetExpForm(){
  if(editingExpId)document.getElementById('e-date').value=todayStr();
  editingExpId=null;
  document.getElementById('e-amount').value='';document.getElementById('e-note').value='';
- setSplitMode('custom');renderSplitBox({});updateFormMode();renderExpenses();
+ setSplitMode('custom');renderSplitBox({},[]);updateFormMode();renderExpenses();
 }
 async function delExpense(id){expenses=expenses.filter(e=>e.id!==id);await pushField('expenses',expenses);if(editingExpId===id)resetExpForm();else renderExpenses();updateSeedBtns();}
 async function setPayer(id,val){const e=expenses.find(x=>x.id===id);if(!e)return;applyFields(e,{paidBy:val||undefined});await pushField('expenses',expenses);renderExpenses();}
@@ -1248,7 +1264,8 @@ function renderExpenses(){
    const title=e.note||(e._seedNote?t(e._seedNote):t(c.name));
    const tag=e._seed?' ‧ '+t(UI.estTag):'';
    const payer=members.length>=2?`<select class="exp-payer" onclick="event.stopPropagation()" onchange="setPayer('${e.id}',this.value)">${payerOptions(e.paidBy)}</select>`:'';
-   const split=e.split&&e.split.mode==='custom'?`<span class="split-tag">${t(UI.splitTag)}</span>`:'';
+   const sp=e.split||{},outNames=(sp.out||[]).map(id=>(members.find(m=>m.id===id)||{}).name).filter(Boolean);
+   const split=(sp.mode==='custom'&&sp.own?`<span class="split-tag">${t(UI.splitTag)}</span>`:'')+(outNames.length?`<span class="split-tag">${t(UI.exclTag)} ${esc(outNames.join('、'))}</span>`:'');
    return `<div class="exp-item${e.id===editingExpId?' editing':''}" onclick="startEditExpense('${e.id}')"><span class="cat-dot" style="background:${c.color}"></span>
     <div class="meta"><div class="ttl">${esc(title)}</div><div class="sub"><span>${t(c.name)} ‧ ${e.date}${tag}</span>${payer}${split}</div></div>
     <span class="amt">${sym}${fmt(e.amount)}</span>
@@ -1265,7 +1282,12 @@ async function addMember(){
  members.push({id:'m'+Date.now()+Math.floor(Math.random()*1000),name});
  inp.value='';await pushField('members',members);renderExpenses();
 }
-async function removeMember(id){members=members.filter(m=>m.id!==id);await pushField('members',members);renderExpenses();}
+async function removeMember(id){
+ const m=members.find(x=>x.id===id);if(!m)return;
+ const n=memberRefCount(id);
+ if(n&&!confirm(t(UI.confirmRmMember).replace('{name}',m.name).replace('{n}',n)))return;
+ members=members.filter(x=>x.id!==id);await pushField('members',members);renderExpenses();
+}
 function renderMembers(){
  document.getElementById('settle-ttl').textContent=t(UI.settleTtl);
  document.getElementById('members-label').textContent=t(UI.membersLabel);
@@ -1277,29 +1299,48 @@ function renderMembers(){
  document.getElementById('split-field').hidden=!ok;
  renderSplitBox();
 }
-// 算每位成員在一筆花費裡要攤多少（原幣別）：各自金額先算給本人，剩下的平分；不合法時回傳 null
+// 算每位成員在一筆花費裡要攤多少（原幣別）：沒勾的人不分，各自金額先算給本人，剩下的平分給有勾的人；不合法時回傳 null
 function expenseShares(e,mems){
  if(!mems.length)return null;
- const own=(e.split&&e.split.mode==='custom'&&e.split.own)||{};
- const out={};let used=0;
- for(const m of mems){const v=Number(own[m.id])||0;if(v<0)return null;out[m.id]=v;used+=v;}
+ const sp=e.split||{};
+ const own=(sp.mode==='custom'&&sp.own)||{};
+ const skip=sp.out||[];
+ const inMems=mems.filter(m=>skip.indexOf(m.id)<0);
+ if(!inMems.length)return null;
+ const res={};let used=0;
+ mems.forEach(m=>{res[m.id]=0;});
+ for(const m of inMems){const v=Number(own[m.id])||0;if(v<0)return null;res[m.id]=v;used+=v;}
  const rest=e.amount-used;
  if(rest<-0.005)return null;
- mems.forEach(m=>out[m.id]+=rest/mems.length);
- return out;
+ inMems.forEach(m=>res[m.id]+=rest/inMems.length);
+ return res;
 }
-// 把表單「各自金額」輸入框的字串轉成要存的分法；回傳 {split} 或 {error:'bad'|'over'}
-function splitFromInputs(amount,mode,raw){
- if(mode!=='custom')return {split:undefined};
+// 把表單的分法、各自金額輸入框、沒勾的人轉成要存的分法；回傳 {split} 或 {error:'bad'|'over'|'none'}
+function splitFromInputs(amount,mode,raw,skip){
+ skip=skip||[];
+ const ids=Object.keys(raw);
+ if(ids.length&&ids.every(id=>skip.indexOf(id)>=0))return {error:'none'};
  const own={};let used=0;
- for(const id of Object.keys(raw)){
-  const s=String(raw[id]).trim();if(!s)continue;
-  const v=Number(s);if(!isFinite(v)||v<0)return {error:'bad'};
-  if(v>0){own[id]=v;used+=v;}
+ if(mode==='custom'){
+  for(const id of ids){
+   if(skip.indexOf(id)>=0)continue;
+   const s=String(raw[id]).trim();if(!s)continue;
+   const v=Number(s);if(!isFinite(v)||v<0)return {error:'bad'};
+   if(v>0){own[id]=v;used+=v;}
+  }
+  if(used-amount>0.005)return {error:'over'};
  }
- if(used-amount>0.005)return {error:'over'};
- return {split:Object.keys(own).length?{mode:'custom',own}:undefined};
+ const sp={mode:mode==='custom'?'custom':'equal'};
+ if(Object.keys(own).length)sp.own=own;
+ if(skip.length)sp.out=skip.slice();
+ return {split:sp.own||sp.out?sp:undefined};
 }
+// 成員出現在幾筆紀錄裡（付錢的人、各自金額、沒勾）
+function memberRefCount(id){
+ return expenses.filter(e=>e.paidBy===id||(e.split&&((e.split.own&&e.split.own[id]>0)||(e.split.out||[]).indexOf(id)>=0))).length;
+}
+// 成員不到 2 人時表單沒有分帳欄位，存檔就不動原本的誰付的與分帳
+function dropSplitFields(fields,memberCount){if(memberCount<2){delete fields.split;delete fields.paidBy;}return fields;}
 // 結算分帳；target 是結算幣別（'TWD' 或 'JPY'），不同幣別的那筆照匯率換算
 function computeSettlement(target){
  if(members.length<2)return null;

@@ -16,6 +16,8 @@ eval(extract('expenseShares'));
 eval(extract('computeSettlement'));
 eval(extract('splitFromInputs'));
 eval(extract('applyFields'));
+eval(extract('memberRefCount'));
+eval(extract('dropSplitFields'));
 
 const A = { id: 'a', name: 'Ray' }, B = { id: 'b', name: '小明' };
 const roundTx = tx => tx.map(x => ({ ...x, amount: Math.round(x.amount) }));
@@ -155,6 +157,81 @@ check('寫回資料：值是 undefined 的欄位被刪掉，其他欄位與沒�
   applyFields(e, { amount: 200, paidBy: undefined, split: undefined });
   assert.deepStrictEqual(e, { id: 'x', amount: 200, _seed: 'transport' });
   assert.ok(!('paidBy' in e) && !('split' in e));
+});
+
+const C = { id: 'c', name: '阿華' };
+
+check('這筆沒勾 Deny：各自金額模式下全部算付錢的人', () => {
+  const e = { amount: 2000, split: { mode: 'custom', out: ['b'] } };
+  assert.deepStrictEqual(expenseShares(e, [A, B]), { a: 2000, b: 0 });
+});
+
+check('各自金額＋有人沒勾：剩下的只平分給有勾的人', () => {
+  const e = { amount: 3000, split: { mode: 'custom', own: { a: 1000 }, out: ['c'] } };
+  assert.deepStrictEqual(expenseShares(e, [A, B, C]), { a: 2000, b: 1000, c: 0 });
+});
+
+check('平分模式也能取消勾選某人', () => {
+  const e = { amount: 3000, split: { mode: 'equal', out: ['c'] } };
+  assert.deepStrictEqual(expenseShares(e, [A, B, C]), { a: 1500, b: 1500, c: 0 });
+});
+
+check('沒勾的人就算格子裡有數字也不算', () => {
+  const e = { amount: 2000, split: { mode: 'custom', own: { b: 500 }, out: ['b'] } };
+  assert.deepStrictEqual(expenseShares(e, [A, B]), { a: 2000, b: 0 });
+});
+
+check('所有人都沒勾時回傳 null', () => {
+  const e = { amount: 2000, split: { mode: 'custom', out: ['a', 'b'] } };
+  assert.strictEqual(expenseShares(e, [A, B]), null);
+});
+
+check('結算：10/30 兩人各自金額、10/31 只有 Ray，小明只還 10/30 自己那份', () => {
+  members = [A, B]; rate = 0.2;
+  expenses = [
+    { amount: 939, cur: 'JPY', paidBy: 'a', split: { mode: 'custom', own: { a: 400, b: 539 } } },
+    { amount: 2000, cur: 'JPY', paidBy: 'a', split: { mode: 'custom', out: ['b'] } },
+  ];
+  assert.deepStrictEqual(roundTx(computeSettlement('JPY').tx), [{ from: '小明', to: 'Ray', amount: 539 }]);
+});
+
+check('表單：取消勾選的人記在 out，他的格子不收', () => {
+  assert.deepStrictEqual(
+    splitFromInputs(2000, 'custom', { a: '', b: '500' }, ['b']),
+    { split: { mode: 'custom', out: ['b'] } });
+});
+
+check('表單：平分模式有人沒勾時也要存分法', () => {
+  assert.deepStrictEqual(splitFromInputs(3000, 'equal', {}, ['c']), { split: { mode: 'equal', out: ['c'] } });
+});
+
+check('表單：全部都沒勾時回報 none', () => {
+  assert.deepStrictEqual(splitFromInputs(3000, 'custom', { a: '', b: '' }, ['a', 'b']), { error: 'none' });
+});
+
+check('成員出現在幾筆紀錄（付錢的、各自金額、沒勾）', () => {
+  expenses = [
+    { amount: 1, paidBy: 'b' },
+    { amount: 1, paidBy: 'a', split: { mode: 'custom', own: { b: 1 } } },
+    { amount: 1, paidBy: 'a', split: { mode: 'custom', out: ['b'] } },
+    { amount: 1, paidBy: 'a' },
+  ];
+  assert.strictEqual(memberRefCount('b'), 3);
+  assert.strictEqual(memberRefCount('c'), 0);
+});
+
+check('成員不到 2 人時存檔不動原本的誰付的與分帳', () => {
+  const e = { id: 'x', amount: 939, paidBy: 'a', split: { mode: 'custom', own: { a: 400, b: 539 } } };
+  applyFields(e, dropSplitFields({ amount: 939, note: '晚餐', paidBy: undefined, split: undefined }, 1));
+  assert.deepStrictEqual(e.split, { mode: 'custom', own: { a: 400, b: 539 } });
+  assert.strictEqual(e.paidBy, 'a');
+  assert.strictEqual(e.note, '晚餐');
+});
+
+check('成員 2 人以上時照表單內容存（可以清掉分帳）', () => {
+  const e = { id: 'x', amount: 939, paidBy: 'a', split: { mode: 'custom', own: { a: 400 } } };
+  applyFields(e, dropSplitFields({ amount: 939, paidBy: 'a', split: undefined }, 2));
+  assert.ok(!('split' in e));
 });
 
 console.log(`\n${passed} passed`);
