@@ -626,6 +626,7 @@ const UI={
  paidByNone:'—　未指定',
  noMembers:'先在上方記帳表單加入 2 位以上同行成員，就能自動分帳。',
  membersHint:'加入 2 位以上同行成員，就能記誰付的、自動分帳。',
+ membersJoinHint:'之後才加入的成員不會算進之前的紀錄；要算他的，打開那筆勾回來。',
  needPayers:'在各筆花費指定「誰付的」，這裡就會自動算出怎麼分。',
  paidWord:'已付',
  shareWord:'應攤',
@@ -1293,11 +1294,25 @@ function renderExpenses(){
 }
 
 /* ===== members & settlement ===== */
+// 中途加入的成員不分攤加入前的紀錄：原本已能分帳（2 人以上）時，把他加進每筆的「沒勾」名單
+function excludeNewMember(list,id,prevCount){
+ if(prevCount<2)return list;
+ list.forEach(e=>{
+  if(!e.split)e.split={mode:'equal'};
+  const out=e.split.out||[];
+  if(out.indexOf(id)<0)e.split.out=out.concat(id);
+ });
+ return list;
+}
 async function addMember(){
  const inp=document.getElementById('member-input');const name=inp.value.trim();
  if(!name)return;
- members.push({id:'m'+Date.now()+Math.floor(Math.random()*1000),name});
- inp.value='';await pushField('members',members);renderExpenses();
+ const id='m'+Date.now()+Math.floor(Math.random()*1000);
+ const prevCount=members.length;
+ members.push({id,name});
+ inp.value='';await pushField('members',members);
+ if(prevCount>=2&&expenses.length){excludeNewMember(expenses,id,prevCount);await pushField('expenses',expenses);}
+ renderExpenses();
 }
 async function removeMember(id){
  const m=members.find(x=>x.id===id);if(!m)return;
@@ -1311,7 +1326,7 @@ function renderMembers(){
  document.getElementById('member-input').placeholder=t(UI.addMemberPh);
  document.getElementById('members-box').innerHTML=members.map(m=>`<span class="member-chip">${esc(m.name)}<button onclick="removeMember('${m.id}')" aria-label="${t(UI.del)}">×</button></span>`).join('');
  const ok=members.length>=2;
- document.getElementById('members-hint').textContent=ok?'':t(UI.membersHint);
+ document.getElementById('members-hint').textContent=t(ok?UI.membersJoinHint:UI.membersHint);
  document.getElementById('paidby-field').hidden=!ok;
  document.getElementById('split-field').hidden=!ok;
  renderSplitBox();

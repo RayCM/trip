@@ -19,6 +19,7 @@ eval(extract('applyFields'));
 eval(extract('memberRefCount'));
 eval(extract('dropSplitFields'));
 eval(extract('sortExpenses'));
+eval(extract('excludeNewMember'));
 
 const A = { id: 'a', name: 'Ray' }, B = { id: 'b', name: '小明' };
 const roundTx = tx => tx.map(x => ({ ...x, amount: Math.round(x.amount) }));
@@ -257,6 +258,38 @@ check('清單排序：不改動原本的陣列', () => {
   const list = [{ id: '1', date: '2026-01-01' }, { id: '2', date: '2026-01-02' }];
   sortExpenses(list);
   assert.deepStrictEqual(list.map(e => e.id), ['1', '2']);
+});
+
+check('中途加入：之前的紀錄都把新成員排除（平分的補上分法、已排除的不重複）', () => {
+  const list = [
+    { id: '1', amount: 1000 },
+    { id: '2', amount: 939, split: { mode: 'custom', own: { a: 400, b: 539 } } },
+    { id: '3', amount: 2000, split: { mode: 'custom', out: ['b'] } },
+    { id: '4', amount: 500, split: { mode: 'equal', out: ['c'] } },
+  ];
+  excludeNewMember(list, 'c', 2);
+  assert.deepStrictEqual(list.map(e => e.split), [
+    { mode: 'equal', out: ['c'] },
+    { mode: 'custom', own: { a: 400, b: 539 }, out: ['c'] },
+    { mode: 'custom', out: ['b', 'c'] },
+    { mode: 'equal', out: ['c'] },
+  ]);
+});
+
+check('中途加入：結算時新成員不分攤加入前的花費', () => {
+  members = [A, B]; rate = 0.2;
+  expenses = [{ id: '1', amount: 3000, cur: 'JPY', paidBy: 'a' }];
+  excludeNewMember(expenses, 'c', members.length);
+  members = [A, B, C];
+  const r = computeSettlement('JPY');
+  assert.strictEqual(Math.round(r.net.find(x => x.id === 'c').share), 0);
+  assert.deepStrictEqual(roundTx(r.tx), [{ from: '小明', to: 'Ray', amount: 1500 }]);
+});
+
+check('原本成員不到 2 人時（還不能分帳）加人，不動舊紀錄', () => {
+  const list = [{ id: '1', amount: 1000 }];
+  excludeNewMember(list, 'b', 1);
+  assert.ok(!('split' in list[0]));
 });
 
 console.log(`\n${passed} passed`);

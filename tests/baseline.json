@@ -83,6 +83,7 @@
   "mNewTitle": "新增行程",
   "manualLink": "操作手冊 ↗",
   "membersHint": "加入 2 位以上同行成員，就能記誰付的、自動分帳。",
+  "membersJoinHint": "之後才加入的成員不會算進之前的紀錄；要算他的，打開那筆勾回來。",
   "membersLabel": "同行成員",
   "needPayers": "在各筆花費指定「誰付的」，這裡就會自動算出怎麼分。",
   "noMembers": "先在上方記帳表單加入 2 位以上同行成員，就能自動分帳。",
