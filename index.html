@@ -771,13 +771,17 @@ const TODOS=[
 
 const CATS=[
  {id:'transport',color:'#5b7c91',name:'交通'},
+ {id:'ictopup',color:'#4f9a9a',name:'IC卡儲值'},
  {id:'lodging',color:'#7a6a9e',name:'住宿'},
+ {id:'breakfast',color:'#e0a84a',name:'早餐'},
+ {id:'lunch',color:'#d98a5a',name:'午餐'},
+ {id:'dinner',color:'#8e3f24',name:'晚餐'},
  {id:'food',color:'#c2693a',name:'餐飲'},
  {id:'ticket',color:'#5d7e57',name:'門票・活動'},
  {id:'shopping',color:'#b8472e',name:'購物'},
  {id:'other',color:'#928a7d',name:'其他'}
 ];
-const catById=id=>CATS.find(c=>c.id===id)||CATS[5];
+const catById=id=>CATS.find(c=>c.id===id)||CATS.find(c=>c.id==='other');
 
 const SEED_TAG='transport';
 const TRANSPORT_EST=[
@@ -1243,6 +1247,13 @@ function resetExpForm(){
 }
 async function delExpense(id){expenses=expenses.filter(e=>e.id!==id);await pushField('expenses',expenses);if(editingExpId===id)resetExpForm();else renderExpenses();updateSeedBtns();}
 async function setPayer(id,val){const e=expenses.find(x=>x.id===id);if(!e)return;applyFields(e,{paidBy:val||undefined});await pushField('expenses',expenses);renderExpenses();}
+// 清單上的標題：有說明用說明，交通預估用它的預估說明，否則用「日期 分類」（例：11/02 午餐）
+function expenseTitle(e){
+ if(e.note)return e.note;
+ if(e._seedNote)return t(e._seedNote);
+ const m=/^\d{4}-(\d{2})-(\d{2})$/.exec(e.date||'');
+ return (m?m[1]+'/'+m[2]+' ':'')+t(catById(e.cat).name);
+}
 // 清單排序：日期新到舊；同一天後輸入的在上面（編號開頭 13 碼是輸入時間），交通預估排在手動記的後面
 function sortExpenses(list){
  const at=e=>{const m=/^\d{13}/.exec(e.id||'');return m?Number(m[0]):-1;};
@@ -1267,7 +1278,7 @@ function renderExpenses(){
   const ordered=sortExpenses(expenses);
   list.innerHTML=ordered.map(e=>{
    const c=catById(e.cat),sym=e.cur==='JPY'?'¥':'NT$';
-   const title=e.note||(e._seedNote?t(e._seedNote):t(c.name));
+   const title=expenseTitle(e);
    const tag=e._seed?' ‧ '+t(UI.estTag):'';
    const payer=members.length>=2?`<select class="exp-payer" onclick="event.stopPropagation()" onchange="setPayer('${e.id}',this.value)">${payerOptions(e.paidBy)}</select>`:'';
    const sp=e.split||{},outNames=(sp.out||[]).map(id=>(members.find(m=>m.id===id)||{}).name).filter(Boolean);

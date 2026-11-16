@@ -433,9 +433,29 @@
    "name": "交通"
   },
   {
+   "id": "ictopup",
+   "color": "#4f9a9a",
+   "name": "IC卡儲值"
+  },
+  {
    "id": "lodging",
    "color": "#7a6a9e",
    "name": "住宿"
+  },
+  {
+   "id": "breakfast",
+   "color": "#e0a84a",
+   "name": "早餐"
+  },
+  {
+   "id": "lunch",
+   "color": "#d98a5a",
+   "name": "午餐"
+  },
+  {
+   "id": "dinner",
+   "color": "#8e3f24",
+   "name": "晚餐"
   },
   {
    "id": "food",
