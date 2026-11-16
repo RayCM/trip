@@ -128,6 +128,28 @@ check('表單：填了不是數字或負數時回報 bad', () => {
   assert.deepStrictEqual(splitFromInputs(2000, 'custom', { a: '-5' }), { error: 'bad' });
 });
 
+check('結算可以改用日圓算：日圓那筆不經過匯率，小明直接還 ¥1,450', () => {
+  members = [A, B]; rate = 0.21;
+  expenses = [{ amount: 2700, cur: 'JPY', paidBy: 'a', split: { mode: 'custom', own: { a: 1000, b: 1200 } } }];
+  const r = computeSettlement('JPY');
+  assert.deepStrictEqual(roundTx(r.tx), [{ from: '小明', to: 'Ray', amount: 1450 }]);
+  assert.strictEqual(Math.round(r.pool), 2700);
+});
+
+check('結算用日圓時，台幣那筆照匯率換成日圓', () => {
+  members = [A, B]; rate = 0.2;
+  expenses = [{ amount: 1000, cur: 'TWD', paidBy: 'b' }];
+  const r = computeSettlement('JPY');
+  // NT$1,000 ＝ ¥5,000，Ray 要還一半
+  assert.deepStrictEqual(roundTx(r.tx), [{ from: 'Ray', to: '小明', amount: 2500 }]);
+});
+
+check('不指定幣別時照舊用台幣算', () => {
+  members = [A, B]; rate = 0.2;
+  expenses = [{ amount: 1000, cur: 'JPY', paidBy: 'a' }];
+  assert.deepStrictEqual(roundTx(computeSettlement().tx), [{ from: '小明', to: 'Ray', amount: 100 }]);
+});
+
 check('寫回資料：值是 undefined 的欄位被刪掉，其他欄位與沒提到的欄位都保留（Firebase 不收 undefined）', () => {
   const e = { id: 'x', amount: 100, paidBy: 'a', split: { mode: 'custom', own: { a: 50 } }, _seed: 'transport' };
   applyFields(e, { amount: 200, paidBy: undefined, split: undefined });

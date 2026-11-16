@@ -49,7 +49,7 @@ global.navigator = {};
 let ranWithoutThrow = true, thrown = null, R = null;
 try {
   // 尾端運算式把要檢查的東西交出來
-  R = eval(app + '\n;({renderAll,renderTimeline,renderTodos,renderExpenses,applyStatic,updateSeed,itinerary,cd,seedSubHtml,t})');
+  R = eval(app + '\n;({renderAll,renderTimeline,renderTodos,renderExpenses,applyStatic,updateSeed,itinerary,cd,seedSubHtml,t,splitMode})');
 } catch (e) {
   ranWithoutThrow = false;
   thrown = e;
@@ -239,6 +239,10 @@ check('待辦頁：倒數文字是中文', () => {
 
 check('html lang 屬性是 zh-Hant', () => {
   assert.strictEqual(document.documentElement.lang, 'zh-Hant');
+});
+
+check('記帳表單預設分法是「各自金額」（一格都不填就等於平分）', () => {
+  assert.strictEqual(R.splitMode, 'custom');
 });
 
 check('全部渲染輸出裡沒有殘留的英文介面文字', () => {
